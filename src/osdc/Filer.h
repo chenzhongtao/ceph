@@ -125,9 +125,9 @@ class Filer {
 	   __u32 truncate_seq,
            Context *onfinish) {
     assert(snap);  // (until there is a non-NOSNAP write)
-    vector<ObjectExtent> extents;
+    vector<ObjectExtent> extents;//将要读取数据的长度和偏移转化为要访问的对象
     Striper::file_to_extents(cct, ino, layout, offset, len, truncate_size, extents);
-    objecter->sg_read_trunc(extents, snap, bl, flags,
+    objecter->sg_read_trunc(extents, snap, bl, flags,//对集合中的每个ObjectExtent进行处理
 			    truncate_size, truncate_seq, onfinish);
     return 0;
   }

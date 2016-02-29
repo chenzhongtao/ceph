@@ -75,6 +75,7 @@ bool PipeConnection::is_connected()
 int PipeConnection::send_message(Message *m)
 {
   assert(msgr);
+  //# SimpleMessenger::send_message  SimpleMessenger.h:139
   return static_cast<SimpleMessenger*>(msgr)->send_message(m, this);
 }
 

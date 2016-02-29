@@ -29,7 +29,7 @@ OpRequest::OpRequest(Message *req, OpTracker *tracker) :
     warn_interval_multiplier = tracker->cct->_conf->osd_recovery_op_warn_multiple;
   }
   if (req->get_type() == CEPH_MSG_OSD_OP) {
-    reqid = static_cast<MOSDOp*>(req)->get_reqid();
+    reqid = static_cast<MOSDOp*>(req)->get_reqid();//调用MOSDOp的get_reqid，返回一个osd_reqid_t的对象
   } else if (req->get_type() == MSG_OSD_SUBOP) {
     reqid = static_cast<MOSDSubOp*>(req)->reqid;
   } else if (req->get_type() == MSG_OSD_REPOP) {

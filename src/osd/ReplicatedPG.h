@@ -89,7 +89,8 @@ public:
   virtual ~PGLSParentFilter() {}
   virtual bool filter(bufferlist& xattr_data, bufferlist& outdata);
 };
-
+//PG只被ReplicatedPG继承，两个类快合成一个了，基本可认为是一个
+//纠删码和复制卷的子类通过PGBackend来区分
 class ReplicatedPG : public PG, public PGBackend::Listener {
   friend class OSD;
   friend class Watch;
@@ -322,6 +323,9 @@ public:
   void send_message(int to_osd, Message *m) {
     osd->send_message_osd_cluster(to_osd, m, get_osdmap()->get_epoch());
   }
+
+  //zhangmin add 这里的实现在 ReplicatedBackend->submit_transaction处被调用
+  //下一步进入ObjectStore.h的queue_transactions中
   void queue_transaction(ObjectStore::Transaction *t, OpRequestRef op) {
     osd->store->queue_transaction(osr.get(), t, 0, 0, 0, op);
   }
@@ -430,11 +434,11 @@ public:
   pg_shard_t primary_shard() const {
     return primary;
   }
-  uint64_t min_peer_features() const {
-    return get_min_peer_features();
+  uint64_t min_peer_features() const {//继承PGBackend::Listener，实现其min_peer_features的虚函数
+    return get_min_peer_features();//继承PG，调用PG的get_min_peer_features函数
   }
 
-  bool transaction_use_tbl() {
+  bool transaction_use_tbl() {//这个函数返回False
     uint64_t min_features = get_min_peer_features();
     return !(min_features & CEPH_FEATURE_OSD_TRANSACTION_MAY_LAYOUT);
   }
@@ -663,7 +667,7 @@ public:
   /*
    * State on the PG primary associated with the replicated mutation
    */
-  class RepGather {
+  class RepGather {//用来控制向replica发送请求
   public:
     xlist<RepGather*>::item queue_item;
     int nref;
@@ -678,19 +682,19 @@ public:
 
     bool rep_aborted, rep_done;
 
-    bool all_applied;
+    bool all_applied;//是否收到所有replica的ack
     bool all_committed;
-    bool sent_ack;
+    bool sent_ack;//是否向client端发送了ack
     //bool sent_nvram;
     bool sent_disk;
     
     utime_t   start;
     
-    eversion_t          pg_local_last_complete;
+    eversion_t          pg_local_last_complete;//// PG最近完成的op
 
     bool queue_snap_trimmer;
 
-    Context *on_applied;
+    Context *on_applied;//这个是记录什么的?
     bool log_op_stat;
     
     RepGather(OpContext *c, ObjectContextRef pi, ceph_tid_t rt,

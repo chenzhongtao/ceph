@@ -1066,7 +1066,8 @@ static string make_hash_str(const string &inkey, const string &nspace)
 uint32_t pg_pool_t::hash_key(const string& key, const string& ns) const
 {
   string n = make_hash_str(key, ns);
-  return ceph_str_hash(object_hash, n.c_str(), n.length());
+  // object_hash = 2
+  return ceph_str_hash(object_hash, n.c_str(), n.length());//用算法根据对象名称计算出hash值
 }
 
 uint32_t pg_pool_t::raw_hash_to_pg(uint32_t v) const
@@ -1077,10 +1078,11 @@ uint32_t pg_pool_t::raw_hash_to_pg(uint32_t v) const
 /*
  * map a raw pg (with full precision ps) into an actual pg, for storage
  */
+//# 把哈希值映射到pg  m_seed从1817778731改为555 (1817778731 & 1023)
 pg_t pg_pool_t::raw_pg_to_pg(pg_t pg) const
 {
-  pg.set_ps(ceph_stable_mod(pg.ps(), pg_num, pg_num_mask));
-  return pg;
+  pg.set_ps(ceph_stable_mod(pg.ps(), pg_num, pg_num_mask));//为pg_t的成员m_seed重新赋值，ps()是返回pg中的m_seed的值
+  return pg;//上面是进行mod运算，计算得到物理pg_id
 }
   
 /*
@@ -1088,21 +1090,28 @@ pg_t pg_pool_t::raw_pg_to_pg(pg_t pg) const
  * pool id in that value so that different pools don't use the same
  * seeds.
  */
-ps_t pg_pool_t::raw_pg_to_pps(pg_t pg) const
+
+ //# print pg (const pg_t &) @0x7fffffffcb58: {m_pool = 1, m_seed = 1817778731, m_preferred = -1} 
+ /*# 计算pg后还要跟pool_id产生一个随机数，如果3副本，一个pg只会落到3个osd上，加上pool_id后，多个pool相同的pg_num就会落到更多的osd上
+ 这样对每个pool的pg数就无所谓，可以设置不一样*/
+ps_t pg_pool_t::raw_pg_to_pps(pg_t pg) const //这个函数返回uint32_t，对应物理pg的id
+
 {
   if (flags & FLAG_HASHPSPOOL) {
     // Hash the pool id so that pool PGs do not overlap.
     return
+      // ps为块的哈希值 pgp_num =1024 pgp_num_mask=1023  pg.pool()=1 pg.ps() = 1817778731
+      // pg.ps() & bmask
       crush_hash32_2(CRUSH_HASH_RJENKINS1,
-		     ceph_stable_mod(pg.ps(), pgp_num, pgp_num_mask),
-		     pg.pool());
+		     ceph_stable_mod(pg.ps(), pgp_num, pgp_num_mask),//ceph_stable_mod这个函数就是取模运算，计算物理的pg id
+		     pg.pool());//pg.ps()返回m_seed值，即hash值
   } else {
     // Legacy behavior; add ps and pool together.  This is not a great
     // idea because the PGs from each pool will essentially overlap on
     // top of each other: 0.5 == 1.4 == 2.3 == ...
     return
       ceph_stable_mod(pg.ps(), pgp_num, pgp_num_mask) +
-      pg.pool();
+      pg.pool();//这里返回存储池的id即pg_t的成员m_pool
   }
 }
 
@@ -4991,8 +5000,8 @@ ostream& operator<<(ostream& out, const OSDOp& op)
   return out;
 }
 
-
-void OSDOp::split_osd_op_vector_in_data(vector<OSDOp>& ops, bufferlist& in)
+//zhangmin add OSDOp的定义位于osd_types.h中的struct OSDOp中
+void OSDOp::split_osd_op_vector_in_data(vector<OSDOp>& ops, bufferlist& in)//OSDOp定义在osd_types.h的3506行
 {
   bufferlist::iterator datap = in.begin();
   for (unsigned i = 0; i < ops.size(); i++) {
@@ -5000,6 +5009,7 @@ void OSDOp::split_osd_op_vector_in_data(vector<OSDOp>& ops, bufferlist& in)
       ::decode(ops[i].soid, datap);
     }
     if (ops[i].op.payload_len) {
+        //# 只需拷贝ptr就可以，内存不用复制
       datap.copy(ops[i].op.payload_len, ops[i].indata);
     }
   }

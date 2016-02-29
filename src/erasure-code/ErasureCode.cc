@@ -33,8 +33,8 @@ int ErasureCode::minimum_to_decode(const set<int> &want_to_read,
                                    const set<int> &available_chunks,
                                    set<int> *minimum)
 {
-  if (includes(available_chunks.begin(), available_chunks.end(),
-	       want_to_read.begin(), want_to_read.end())) {
+  if (includes(available_chunks.begin(), available_chunks.end(),//bool includes(beg,end,searchBeg,searchEnd)
+	       want_to_read.begin(), want_to_read.end())) {//用来判断已序序列[beg,end)是否包含另一个已序序列[searchBeg,searchEnd)的全部元素
     *minimum = want_to_read;
   } else {
     unsigned int k = get_data_chunk_count();

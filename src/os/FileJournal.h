@@ -66,13 +66,13 @@ public:
 
   Mutex writeq_lock;
   Cond writeq_cond;
-  deque<write_item> writeq;
+  deque<write_item> writeq;//zhangmin add 消息队列
   bool writeq_empty();
   write_item &peek_write();
   void pop_write();
 
   Mutex completions_lock;
-  deque<completion_item> completions;
+  deque<completion_item> completions;  //zhangmin add 完成队列C_JournaledAhead
   bool completions_empty() {
     Mutex::Locker l(completions_lock);
     return completions.empty();
@@ -80,12 +80,12 @@ public:
   completion_item completion_peek_front() {
     Mutex::Locker l(completions_lock);
     assert(!completions.empty());
-    return completions.front();
+    return completions.front();//获得容器首元素的引用。
   }
   void completion_pop_front() {
     Mutex::Locker l(completions_lock);
     assert(!completions.empty());
-    completions.pop_front();
+    completions.pop_front();//删除容器头部的元素
   }
 
   void submit_entry(uint64_t seq, bufferlist& bl, int alignment,
@@ -330,14 +330,14 @@ private:
   void do_discard(int64_t offset, int64_t end);
 
   class Writer : public Thread {
-    FileJournal *journal;
+    FileJournal *journal; //-------------- 这里定义了当前类的成员
   public:
-    Writer(FileJournal *fj) : journal(fj) {}
+    Writer(FileJournal *fj) : journal(fj) {}// ------ 构造函数中初始化上面成员
     void *entry() {
       journal->write_thread_entry();
       return 0;
     }
-  } write_thread;
+  } write_thread;//线程
 
   class WriteFinisher : public Thread {
     FileJournal *journal;
@@ -348,6 +348,9 @@ private:
       return 0;
     }
   } write_finish_thread;
+
+  //zhangmin add 声明FileJournal对象调用其构造函数，调用的是下文重新定义的构造函数，
+  //里面对上面两个成员对象都进行了初始化：write_thread(this), write_finish_thread(this)
 
   off64_t get_top() {
     return ROUND_UP_TO(sizeof(header), block_size);

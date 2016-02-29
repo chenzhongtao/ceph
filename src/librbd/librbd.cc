@@ -1572,7 +1572,7 @@ extern "C" ssize_t rbd_write(rbd_image_t image, uint64_t ofs, size_t len,
 {
   librbd::ImageCtx *ictx = (librbd::ImageCtx *)image;
   tracepoint(librbd, write_enter, ictx, ictx->name.c_str(), ictx->snap_name.c_str(), ictx->read_only, ofs, len, buf);
-  int r = librbd::write(ictx, ofs, len, buf, 0);
+  int r = librbd::write(ictx, ofs, len, buf, 0);  // internal.c  write 
   tracepoint(librbd, write_exit, r);
   return r;
 }

@@ -341,7 +341,7 @@ ObjectCacher::BufferHead *ObjectCacher::Object::map_write(OSDWrite *wr)
        ++ex_it) {
 
     if (ex_it->oid != oid.oid) continue;
-
+    //log: map_write oex rb.0.1011.6b8b4567.000000000000 0~4194304
     ldout(oc->cct, 10) << "map_write oex " << ex_it->oid
 		       << " " << ex_it->offset << "~" << ex_it->length << dendl;
 
@@ -359,6 +359,7 @@ ObjectCacher::BufferHead *ObjectCacher::Object::map_write(OSDWrite *wr)
           final->set_start( cur );
           final->set_length( max );
           oc->bh_add(this, final);
+          //log: map_write adding trailing bh bh[ 0x21d11d0 0~4194304 0x21d0f30 (0) v 0 missing] waiters = {}
           ldout(oc->cct, 10) << "map_write adding trailing bh " << *final << dendl;
         } else {
 	  oc->bh_stat_sub(final);
@@ -441,6 +442,7 @@ ObjectCacher::BufferHead *ObjectCacher::Object::map_write(OSDWrite *wr)
   
   // set versoin
   assert(final);
+  //log: map_write final is bh[ 0x21d11d0 0~4194304 0x21d0f30 (0) v 0 missing] waiters = {}
   ldout(oc->cct, 10) << "map_write final is " << *final << dendl;
 
   return final;
@@ -1369,6 +1371,7 @@ int ObjectCacher::writex(OSDWrite *wr, ObjectSet *oset, Mutex& wait_on_lock,
     for (vector<pair<uint64_t, uint64_t> >::iterator f_it = ex_it->buffer_extents.begin();
          f_it != ex_it->buffer_extents.end();
          ++f_it) {
+      //log: writex writing 0~4194304 into bh[ 0x21d11d0 0~4194304 0x21d0f30 (0) v 0 missing] waiters = {} at 0
       ldout(cct, 10) << "writex writing " << f_it->first << "~" << f_it->second << " into " << *bh << " at " << opos << dendl;
       uint64_t bhoff = bh->start() - opos;
       assert(f_it->second <= bh->length() - bhoff);

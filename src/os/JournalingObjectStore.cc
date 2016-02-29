@@ -250,9 +250,9 @@ void JournalingObjectStore::ApplyManager::commit_finish()
   }
 }
 
-void JournalingObjectStore::_op_journal_transactions(
+void JournalingObjectStore::_op_journal_transactions(//开始写入r日志的操作
   list<ObjectStore::Transaction*>& tls, uint64_t op,
-  Context *onjournal, TrackedOpRef osd_op)
+  Context *onjournal, TrackedOpRef osd_op)//最后一个参数为OpRequestRef
 {
   dout(10) << "op_journal_transactions " << op << " " << tls << dendl;
 
@@ -265,8 +265,9 @@ void JournalingObjectStore::_op_journal_transactions(
       ObjectStore::Transaction *t = *p;
       if (t->get_data_length() > data_len &&
 	(int)t->get_data_length() >= g_conf->journal_align_min_size) {
-	data_len = t->get_data_length();
-	data_align = (t->get_data_alignment() - tbl.length()) & ~CEPH_PAGE_MASK;
+	data_len = t->get_data_length();//获取每个操作的数据长度
+	//获取每个操作的数据段偏移
+	data_align = (t->get_data_alignment() - tbl.length()) & ~CEPH_PAGE_MASK;//align表示对齐
       }
       ::encode(*t, tbl);
     }

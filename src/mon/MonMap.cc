@@ -286,6 +286,12 @@ int MonMap::build_initial(CephContext *cct, ostream& errout)
 	 << ret << std::endl;
     return -ENOENT;
   }
+
+  // add by chenzhongtao
+  /*
+   * 提取mon的名字，如何配置文件有 mon.0和mon.1
+   * 结果mon_names = {"0","1"}
+   */
   std::vector <std::string> mon_names;
   for (std::vector <std::string>::const_iterator s = sections.begin();
        s != sections.end(); ++s) {
@@ -294,7 +300,12 @@ int MonMap::build_initial(CephContext *cct, ostream& errout)
     }
   }
 
-  // Find an address for each monitor in the config file.
+  // add by chenzhongtao
+  /*
+   * Find an address for each monitor in the config file.
+   * 查找每个monitor的地址，配置文件中对应的"mon addr"项
+   * 结果放到 this.mon_addr  map类型,如:{"mon.0":"191.168.45.74:6789"}
+   */
   for (std::vector <std::string>::const_iterator m = mon_names.begin();
        m != mon_names.end(); ++m) {
     std::vector <std::string> sections;
@@ -305,6 +316,7 @@ int MonMap::build_initial(CephContext *cct, ostream& errout)
     sections.push_back("mon");
     sections.push_back("global");
     std::string val;
+    //# val = 168.45.74:6789"
     int res = conf->get_val_from_conf_file(sections, "mon addr", val, true);
     if (res) {
       errout << "failed to get an address for mon." << *m << ": error "

@@ -34,12 +34,12 @@ struct SnapRealmInfo {
   void dump(Formatter *f) const;
   static void generate_test_instances(list<SnapRealmInfo*>& o);
 };
-WRITE_CLASS_ENCODER(SnapRealmInfo)
+WRITE_CLASS_ENCODER(SnapRealmInfo);
 
 
 struct SnapContext {
-  snapid_t seq;            // 'time' stamp
-  vector<snapid_t> snaps;  // existent snaps, in descending order
+  snapid_t seq;            // 'time' stamp  放的是最新快照的id?
+  vector<snapid_t> snaps;  // existent snaps, in descending order (越新的快照排越前)
 
   SnapContext() {}
   SnapContext(snapid_t s, const vector<snapid_t>& v) : seq(s), snaps(v) {}    

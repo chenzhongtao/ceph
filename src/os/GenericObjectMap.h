@@ -66,7 +66,7 @@
 
 // This class only provide basic read capacity, suggest inherit it to
 // implement write transaction to use it. @see StripObjectMap
-class GenericObjectMap {
+class GenericObjectMap {//所有对象保存omap的接口
  public:
   boost::scoped_ptr<KeyValueDB> db;
 

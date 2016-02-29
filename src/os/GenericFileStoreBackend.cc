@@ -173,15 +173,15 @@ int GenericFileStoreBackend::detect_features()
 int GenericFileStoreBackend::create_current()
 {
   struct stat st;
-  int ret = ::stat(get_current_path().c_str(), &st);
-  if (ret == 0) {
+  int ret = ::stat(get_current_path().c_str(), &st);//get_current_path在父类FileStoreBackend中定义
+  if (ret == 0) {//current目录已存在
     // current/ exists
     if (!S_ISDIR(st.st_mode)) {
       dout(0) << "_create_current: current/ exists but is not a directory" << dendl;
       ret = -EINVAL;
     }
   } else {
-    ret = ::mkdir(get_current_path().c_str(), 0755);
+    ret = ::mkdir(get_current_path().c_str(), 0755);//创建current目录
     if (ret < 0) {
       ret = -errno;
       dout(0) << "_create_current: mkdir " << get_current_path() << " failed: "<< cpp_strerror(ret) << dendl;

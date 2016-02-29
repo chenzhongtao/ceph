@@ -362,7 +362,7 @@ CEPH_HASH_NAMESPACE_START
       return H((const char*)&x, sizeof(x));
     }
   };
-CEPH_HASH_NAMESPACE_END
+CEPH_HASH_NAMESPACE_END;
 
 
 /*

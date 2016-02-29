@@ -1215,8 +1215,8 @@ void ReplicatedPG::calc_trim_to()
 
 ReplicatedPG::ReplicatedPG(OSDService *o, OSDMapRef curmap,
 			   const PGPool &_pool, spg_t p) :
-  PG(o, curmap, _pool, p),
-  pgbackend(
+  PG(o, curmap, _pool, p),//peer_features((uint64_t)-1)初始化为-1,PG的构造函数位于PG.cc中的174行
+  pgbackend(//这里决定pgbackend的类型
     PGBackend::build_pg_backend(
       _pool.info, curmap, this, coll_t(p), coll_t::make_temp_coll(p), o->store, cct)),
   object_contexts(o->cct, g_conf->osd_pg_object_context_cache_count),
@@ -1275,7 +1275,7 @@ void ReplicatedPG::do_request(
     return;
 
   switch (op->get_req()->get_type()) {
-  case CEPH_MSG_OSD_OP:
+  case CEPH_MSG_OSD_OP://zhangmin add 确定读操发送到主osd的消息
     if (!is_active()) {
       dout(20) << " peered, not active, waiting for active on " << op << dendl;
       waiting_for_active.push_back(op);
@@ -1293,14 +1293,14 @@ void ReplicatedPG::do_request(
       osd->reply_op_error(op, -EOPNOTSUPP);
       return;
     }
-    do_op(op); // do it now
+    do_op(op); // do it now //zhangmin add 主osd上的pg操作
     break;
 
   case MSG_OSD_SUBOP:
-    do_sub_op(op);
+    do_sub_op(op);//2//zhangmin add 从osd上的pg操作
     break;
 
-  case MSG_OSD_SUBOPREPLY:
+  case MSG_OSD_SUBOPREPLY://zhangmin add 主osd接收到从osd上的pg操作返回
     do_sub_op_reply(op);
     break;
 
@@ -1361,9 +1361,9 @@ bool ReplicatedPG::check_src_targ(const hobject_t& soid, const hobject_t& toid) 
  * pg lock will be held (if multithreaded)
  * osd_lock NOT held.
  */
-void ReplicatedPG::do_op(OpRequestRef& op)
+void ReplicatedPG::do_op(OpRequestRef& op)//对object的操作最终由PG类进行处理，过程如下
 {
-  MOSDOp *m = static_cast<MOSDOp*>(op->get_req());
+  MOSDOp *m = static_cast<MOSDOp*>(op->get_req());//返回MOSDOp类型的message对象
   assert(m->get_type() == CEPH_MSG_OSD_OP);
   if (op->includes_pg_op()) {
     if (pg_op_must_wait(m)) {
@@ -1387,13 +1387,13 @@ void ReplicatedPG::do_op(OpRequestRef& op)
 
   dout(10) << "do_op " << *m
 	   << (op->may_write() ? " may_write" : "")
-	   << (op->may_read() ? " may_read" : "")
+	   << (op->may_read() ? " may_read" : "")//写流程may_read
 	   << (op->may_cache() ? " may_cache" : "")
-	   << " -> " << (write_ordered ? "write-ordered" : "read-ordered")
+	   << " -> " << (write_ordered ? "write-ordered" : "read-ordered")//写流程read-ordered
 	   << " flags " << ceph_osd_flag_string(m->get_flags())
-	   << dendl;
+	   << dendl;// --------- rbd写流程分支
 
-  hobject_t head(m->get_oid(), m->get_object_locator().key,
+  hobject_t head(m->get_oid(), m->get_object_locator().key,// 每个object包含head以及各个快照和克隆版本，先对head进行检查
 		 CEPH_NOSNAP, m->get_pg().ps(),
 		 info.pgid.pool(), m->get_object_locator().nspace);
 
@@ -1401,17 +1401,17 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   if (write_ordered && scrubber.write_blocked_by_scrub(head)) {
     dout(20) << __func__ << ": waiting for scrub" << dendl;
     waiting_for_active.push_back(op);
-    op->mark_delayed("waiting for scrub");
+    op->mark_delayed("waiting for scrub");//scrubber会定期对某个区间的object进行清理，如果object.head在该区间内则需等待scrubber处理完成
     return;
   }
 
   // missing object?
-  if (is_unreadable_object(head)) {
+  if (is_unreadable_object(head)) {//若object.head不可读，则从peer处pull该object
     wait_for_unreadable_object(head, op);
     return;
   }
 
-  // degraded object?
+  // degraded object? --若op要修改object.head，则要求peer都拥有object.head，否则执行push操作
   if (write_ordered && is_degraded_or_backfilling_object(head)) {
     wait_for_degraded_object(head, op);
     return;
@@ -1433,13 +1433,13 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   }
  
   // asking for SNAPDIR is only ok for reads
-  if (m->get_snapid() == CEPH_SNAPDIR && op->may_write()) {
+  if (m->get_snapid() == CEPH_SNAPDIR && op->may_write()) {// op不能修改object.snapdir，因为object.snapdir是只读的
     osd->reply_op_error(op, -EINVAL);
     return;
   }
 
   // dup/replay?
-  if (op->may_write() || op->may_cache()) {
+  if (op->may_write() || op->may_cache()) {// 检测op是否重复
     // warning: we will get back *a* request for this reqid, but not
     // necessarily the most recent.  this happens with flush and
     // promote ops, but we can't possible have both in our log where
@@ -1449,7 +1449,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
     version_t user_version;
     bool got = pg_log.get_log().get_request(
       m->get_reqid(), &replay_version, &user_version);
-    if (got) {
+    if (got) {// 如果是一个已经被执行的op…
       dout(3) << __func__ << " dup " << m->get_reqid()
 	      << " was " << replay_version << dendl;
       if (already_complete(replay_version)) {
@@ -1478,7 +1478,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   ObjectContextRef obc;
   bool can_create = op->may_write() || op->may_cache();
   hobject_t missing_oid;
-  hobject_t oid(m->get_oid(),
+  hobject_t oid(m->get_oid(),// 当前object对应的hobject_t
 		m->get_object_locator().key,
 		m->get_snapid(),
 		m->get_pg().ps(),
@@ -1490,8 +1490,8 @@ void ReplicatedPG::do_op(OpRequestRef& op)
       maybe_await_blocked_snapset(oid, op)) {
     return;
   }
-
-  int r = find_object_context(
+  // 获取oid对应的context，
+  int r = find_object_context(//rbd写流程，进入执行get_object_context - objects_get_attr
     oid, &obc, can_create,
     m->get_flags() & CEPH_OSD_FLAG_MAP_SNAP_CLONE,
     &missing_oid);
@@ -1509,7 +1509,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
       return;
     }
   } else if (r == 0) {
-    if (is_unreadable_object(obc->obs.oi.soid)) {
+    if (is_unreadable_object(obc->obs.oi.soid)) {// 本地存在并不说明它可以读取，例如在EC情况下，必须有足够多的分片才可以
       dout(10) << __func__ << ": clone " << obc->obs.oi.soid
 	       << " is unreadable, waiting" << dendl;
       wait_for_unreadable_object(obc->obs.oi.soid, op);
@@ -1542,7 +1542,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
     if (agent_choose_mode(false, op))
       return;
   }
-
+  // 如果使用了cache tier，可能需要从backend storage中拉取相应的object，然后再执行op
   if ((m->get_flags() & CEPH_OSD_FLAG_IGNORE_CACHE) == 0 &&
       maybe_handle_cache(op, write_ordered, obc, r, missing_oid, false, in_hit_set))
     return;
@@ -1564,7 +1564,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   }
 
   // io blocked on obc?
-  if (obc->is_blocked() &&
+  if (obc->is_blocked() &&// 前面的判断可以确定相应的object已经存在，此时还需判断是否可以访问
       (m->get_flags() & CEPH_OSD_FLAG_FLUSH) == 0) {
     wait_for_blocked_object(obc->obs.oi.soid, op);
     return;
@@ -1573,14 +1573,14 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   dout(25) << __func__ << " oi " << obc->obs.oi << dendl;
 
   // are writes blocked by another object?
-  if (obc->blocked_by) {
+  if (obc->blocked_by) {//是否因为其他object而导致阻塞，例如src object没有恢复等
     dout(10) << "do_op writes for " << obc->obs.oi.soid << " blocked by "
 	     << obc->blocked_by->obs.oi.soid << dendl;
     wait_for_degraded_object(obc->blocked_by->obs.oi.soid, op);
     return;
   }
 
-  // src_oids
+  // src_oids// 如果操作涉及到多个object，还需判断所依赖的src object是否可以访问
   map<hobject_t,ObjectContextRef> src_obc;
   for (vector<OSDOp>::iterator p = m->ops.begin(); p != m->ops.end(); ++p) {
     OSDOp& osd_op = *p;
@@ -1668,7 +1668,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
 	  return;
 	}
 
-	ObjectContextRef sobc = get_object_context(clone_oid, false);
+	ObjectContextRef sobc = get_object_context(clone_oid, false);//filestore的属性操作
 	if (!sobc) {
 	  if (!maybe_handle_cache(op, write_ordered, sobc, -ENOENT, clone_oid, true))
 	    osd->reply_op_error(op, -ENOENT);
@@ -1684,7 +1684,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
       }
     }
   }
-
+  //创建一个OpContext结构,接管message中的所有ops的操作
   OpContext *ctx = new OpContext(op, m->get_reqid(), m->ops, obc, this);
   ctx->op_t = pgbackend->get_transaction();
 
@@ -1719,7 +1719,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if (r) {
+  if (r) {// 没有对应的object，返回错误
     dout(20) << __func__ << " returned an error: " << r << dendl;
     close_op_ctx(ctx, r);
     osd->reply_op_error(op, r);
@@ -1749,7 +1749,7 @@ void ReplicatedPG::do_op(OpRequestRef& op)
   op->mark_started();
   ctx->src_obc = src_obc;
 
-  execute_ctx(ctx);
+  execute_ctx(ctx);//在该函数之前的流程判断的是op本身的类型，例如是否主osd消息，副osd消息或者reply消息等
 }
 
 bool ReplicatedPG::maybe_handle_cache(OpRequestRef op,
@@ -2186,7 +2186,7 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   dout(10) << __func__ << " " << ctx << dendl;
   ctx->reset_obs(ctx->obc);
   OpRequestRef op = ctx->op;
-  MOSDOp *m = static_cast<MOSDOp*>(op->get_req());
+  MOSDOp *m = static_cast<MOSDOp*>(op->get_req());//返回message对象
   ObjectContextRef obc = ctx->obc;
   const hobject_t& soid = obc->obs.oi.soid;
   map<hobject_t,ObjectContextRef>& src_obc = ctx->src_obc;
@@ -2194,7 +2194,7 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   // this method must be idempotent since we may call it several times
   // before we finally apply the resulting transaction.
   delete ctx->op_t;
-  ctx->op_t = pgbackend->get_transaction();
+  ctx->op_t = pgbackend->get_transaction();//经过这一步，实例化了RPGTransaction对象，对象成员事物t中的use_tbl值为True
 
   if (op->may_write() || op->may_cache()) {
     // snap
@@ -2228,7 +2228,7 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   } else {
     dout(10) << "do_op " << soid << " " << ctx->ops
 	     << " ov " << obc->obs.oi.version
-	     << dendl;  
+	     << dendl;  // ---- rbd写的时候走的是这个分支 
   }
 
   if (!ctx->user_at_version)
@@ -2236,8 +2236,8 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   dout(30) << __func__ << " user_at_version " << ctx->user_at_version << dendl;
 
   if (op->may_read()) {
-    dout(10) << " taking ondisk_read_lock" << dendl;
-    obc->ondisk_read_lock();
+    dout(10) << " taking ondisk_read_lock" << dendl; // ---- rbd写的时候走的是这个分支 
+    obc->ondisk_read_lock();//加读锁
   }
   for (map<hobject_t,ObjectContextRef>::iterator p = src_obc.begin(); p != src_obc.end(); ++p) {
     dout(10) << " taking ondisk_read_lock for src " << p->first << dendl;
@@ -2263,12 +2263,12 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   }
 
   if (op->may_read()) {
-    dout(10) << " dropping ondisk_read_lock" << dendl;
+    dout(10) << " dropping ondisk_read_lock" << dendl;// ---- rbd写的流程read操作走的是这个分支 
     obc->ondisk_read_unlock();
   }
   for (map<hobject_t,ObjectContextRef>::iterator p = src_obc.begin(); p != src_obc.end(); ++p) {
     dout(10) << " dropping ondisk_read_lock for src " << p->first << dendl;
-    p->second->ondisk_read_unlock();
+    p->second->ondisk_read_unlock();//操作完后解除读锁
   }
 
   if (result == -EINPROGRESS) {
@@ -2352,16 +2352,17 @@ void ReplicatedPG::execute_ctx(OpContext *ctx)
   }
 
   // issue replica writes
-  ceph_tid_t rep_tid = osd->get_tid();
+  ceph_tid_t rep_tid = osd->get_tid();//创建新的RepGather
   RepGather *repop = new_repop(ctx, obc, rep_tid);  // new repop claims our obc, src_obc refs
+  //用来管理发送给其他副本以及自己进行数据处理的统计，根据这个结构可知那些osd都完成了数据的读写操作
   // note: repop now owns ctx AND ctx->op
 
   repop->src_obc.swap(src_obc); // and src_obc.
 
-  issue_repop(repop);
+  issue_repop(repop);//向该pg的副本发送此次请求,向PG的acting列表中的osd发送消息MOSDSubOp
 
-  eval_repop(repop);
-  repop->put();
+  eval_repop(repop);//进行收尾的工作，将结果回调给客户端，对于读业务，不存在异步和回调，流程走完直接返回给客户端
+  repop->put();//对于写流程，上面的的过程基本没做什么事情，待异步操作完成，由其它地方再调用eval_repop
 }
 
 void ReplicatedPG::reply_ctx(OpContext *ctx, int r)
@@ -2480,7 +2481,7 @@ void ReplicatedPG::do_sub_op_reply(OpRequestRef op)
   assert(r->get_type() == MSG_OSD_SUBOPREPLY);
   if (r->ops.size() >= 1) {
     OSDOp& first = r->ops[0];
-    switch (first.op.op) {
+    switch (first.op.op) {//写入流程没有这个op，则不进入
     case CEPH_OSD_OP_SCRUB_RESERVE:
       sub_op_scrub_reserve_reply(op);
       return;
@@ -3311,8 +3312,8 @@ bool ReplicatedPG::maybe_create_new_object(OpContext *ctx)
   return false;
 }
 
-int ReplicatedPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
-{
+int ReplicatedPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)//处理具体的osd操作
+{//将 ops上要写入的数据全部都按着结构保存在transaction的data_bl，op_bl中,将ops与Transaction绑定的结果
   int result = 0;
   SnapSetContext *ssc = ctx->obc->ssc;
   ObjectState& obs = ctx->new_obs;
@@ -3323,7 +3324,7 @@ int ReplicatedPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 
   PGBackend::PGTransaction* t = ctx->op_t;
 
-  dout(10) << "do_osd_op " << soid << " " << ops << dendl;
+  dout(10) << "do_osd_op " << soid << " " << ops << dendl; // ---- rbd写的时候走的是这个分支 
 
   for (vector<OSDOp>::iterator p = ops.begin(); p != ops.end(); ++p, ctx->current_osd_subop_num++) {
     OSDOp& osd_op = *p;
@@ -3335,12 +3336,12 @@ int ReplicatedPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
     // tracepoints do?
     tracepoint(osd, do_osd_op_pre, soid.oid.name.c_str(), soid.snap.val, op.op, ceph_osd_op_name(op.op), op.flags);
 
-    dout(10) << "do_osd_op  " << osd_op << dendl;
+    dout(10) << "do_osd_op  " << osd_op << dendl; // ---- rbd写的时候走的是这个分支 
 
     bufferlist::iterator bp = osd_op.indata.begin();
 
     // user-visible modifcation?
-    switch (op.op) {
+    switch (op.op) {//对应ceph_osd_op的成员op
       // non user-visible modifications
     case CEPH_OSD_OP_WATCH:
     case CEPH_OSD_OP_CACHE_EVICT:
@@ -3442,7 +3443,7 @@ int ReplicatedPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	    op.extent.length = 0;
 	  }
 	  dout(10) << " read got " << r << " / " << op.extent.length
-		   << " bytes from obj " << soid << dendl;
+		   << " bytes from obj " << soid << dendl;//----rbd写走的这个分支
 
 	  // whole object?  can we verify the checksum?
 	  if (result >= 0 &&
@@ -5626,8 +5627,8 @@ int ReplicatedPG::prepare_transaction(OpContext *ctx)
     return -EINVAL;
   }
 
-  // prepare the actual mutation
-  int result = do_osd_ops(ctx, ctx->ops);
+  // prepare the actual mutation(变化)
+  int result = do_osd_ops(ctx, ctx->ops);//读写操作的区分
   if (result < 0)
     return result;
 
@@ -7156,22 +7157,22 @@ public:
   }
 };
 
-
-void ReplicatedPG::repop_all_applied(RepGather *repop)
+//只有所有OSD上的Journal写入操作完成，执行ondisk，出现waiting_for_commit为空时，才会回调到这个函数
+void ReplicatedPG::repop_all_applied(RepGather *repop) //对应journal的数据写入回调处理
 {
   dout(10) << __func__ << ": repop tid " << repop->rep_tid << " all applied "
 	   << dendl;
-  repop->all_applied = true;
-  if (!repop->rep_aborted) {
-    eval_repop(repop);
-    if (repop->on_applied) {
-     repop->on_applied->complete(0);
+  repop->all_applied = true; //这里设置all_applied为true，初始化RepGather对象时为false
+  if (!repop->rep_aborted) {//rep_aborted这个值为False
+    eval_repop(repop);// ------------------实际处理过程，所有请求处理完成返回客户端
+    if (repop->on_applied) {//初始化on_applied为空,在hit_set_persist中有赋值，和写入主流程无关
+     repop->on_applied->complete(0);//RepGather中的on_applied成员不知道什么情况会用?
      repop->on_applied = NULL;
     }
   }
 }
 
-class C_OSD_RepopCommit : public Context {
+class C_OSD_RepopCommit : public Context {//对应ondisk
   ReplicatedPGRef pg;
   boost::intrusive_ptr<ReplicatedPG::RepGather> repop;
 public:
@@ -7181,23 +7182,23 @@ public:
     pg->repop_all_committed(repop.get());
   }
 };
-
-void ReplicatedPG::repop_all_committed(RepGather *repop)
+//只有所有OSD上的Journal写入操作完成，执行ondisk，出现waiting_for_commit为空时，才会回调到这个函数
+void ReplicatedPG::repop_all_committed(RepGather *repop)//对应ondisk
 {
   dout(10) << __func__ << ": repop tid " << repop->rep_tid << " all committed "
 	   << dendl;
-  repop->all_committed = true;
+  repop->all_committed = true;//这里设置all_committed为true，初始化RepGather对象时为false
 
   if (!repop->rep_aborted) {
     if (repop->v != eversion_t()) {
       last_update_ondisk = repop->v;
       last_complete_ondisk = repop->pg_local_last_complete;
     }
-    eval_repop(repop);
+    eval_repop(repop);// ------------------实际处理过程
   }
 }
 
-void ReplicatedPG::op_applied(const eversion_t &applied_version)
+void ReplicatedPG::op_applied(const eversion_t &applied_version)//这个是实现父类Listener的op_applied接口
 {
   dout(10) << "op_applied version " << applied_version << dendl;
   if (applied_version == eversion_t())
@@ -7233,17 +7234,17 @@ void ReplicatedPG::eval_repop(RepGather *repop)
     dout(10) << "eval_repop " << *repop
 	     << " wants=" << (m->wants_ack() ? "a":"") << (m->wants_ondisk() ? "d":"")
 	     << (repop->rep_done ? " DONE" : "")
-	     << dendl;
+	     << dendl;//rbd写走的分支
   else
     dout(10) << "eval_repop " << *repop << " (no op)"
 	     << (repop->rep_done ? " DONE" : "")
 	     << dendl;
 
-  if (repop->rep_done)
+  if (repop->rep_done)//初始值为false，在全部osd回调完成后设置为true
     return;
 
   // ondisk?
-  if (repop->all_committed) {
+  if (repop->all_committed) {//在总回调repop_all_committed中设置为true
     if (repop->ctx->op && !repop->log_op_stat) {
       log_op_stats(repop->ctx);
       repop->log_op_stat = true;
@@ -7280,24 +7281,24 @@ void ReplicatedPG::eval_repop(RepGather *repop)
 				  repop->ctx->user_at_version);
       }
       reply->add_flags(CEPH_OSD_FLAG_ACK | CEPH_OSD_FLAG_ONDISK);
-      dout(10) << " sending commit on " << *repop << " " << reply << dendl;
-      osd->send_message_osd_client(reply, m->get_connection());
+      dout(10) << " sending commit on " << *repop << " " << reply << dendl;//rbd写流程
+      osd->send_message_osd_client(reply, m->get_connection());//向客户端返回响应
       repop->sent_disk = true;
       repop->ctx->op->mark_commit_sent();
     }
   }
 
   // applied?
-  if (repop->all_applied) {
+  if (repop->all_applied) {//在总回调repop_all_applied中设置为true
 
     // send dup acks, in order
-    if (waiting_for_ack.count(repop->v)) {
+    if (waiting_for_ack.count(repop->v)) {//查看是否存在请求需要回调
       assert(waiting_for_ack.begin()->first == repop->v);
       for (list<pair<OpRequestRef, version_t> >::iterator i =
 	     waiting_for_ack[repop->v].begin();
-	   i != waiting_for_ack[repop->v].end();
-	   ++i) {
-	MOSDOp *m = (MOSDOp*)i->first->get_req();
+	   i != waiting_for_ack[repop->v].end();//开始循环处理这里的请求，然后将请求发还给客户端
+	   ++i) {//waiting_for_ackd是map类型，对应的value为list<pair<OpRequestRef, version_t>，下面的get_req返回的是具体的Message类型
+	MOSDOp *m = (MOSDOp*)i->first->get_req();//下面的应答消息与接受到的请求相对应
 	MOSDOpReply *reply = new MOSDOpReply(m, 0, get_osdmap()->get_epoch(), 0, true);
 	reply->set_reply_versions(repop->ctx->at_version,
 				  i->second);
@@ -7333,7 +7334,7 @@ void ReplicatedPG::eval_repop(RepGather *repop)
   }
 
   // done.
-  if (repop->all_applied && repop->all_committed) {
+  if (repop->all_applied && repop->all_committed) {//所有OSD的commit和apply均完成
     repop->rep_done = true;
 
     do_osd_op_effects(
@@ -7348,9 +7349,9 @@ void ReplicatedPG::eval_repop(RepGather *repop)
       queue_snap_trim();
     }
 
-    dout(10) << " removing " << *repop << dendl;
+    dout(10) << " removing " << *repop << dendl;//rbd写流程打印repop所指的内容
     assert(!repop_queue.empty());
-    dout(20) << "   q front is " << *repop_queue.front() << dendl; 
+    dout(20) << "   q front is " << *repop_queue.front() << dendl; //rbd写流程打印
     if (repop_queue.front() != repop) {
       dout(0) << " removing " << *repop << dendl;
       dout(0) << "   q front is " << *repop_queue.front() << dendl; 
@@ -7360,8 +7361,8 @@ void ReplicatedPG::eval_repop(RepGather *repop)
     remove_repop(repop);
   }
 }
-
-void ReplicatedPG::issue_repop(RepGather *repop)
+//与其他副本通信，将ops发送给其他副本，其他副本操作完成时能够及时的回调找到repop
+void ReplicatedPG::issue_repop(RepGather *repop)//RepGather用来管理发送给其他副本的数据
 {
   OpContext *ctx = repop->ctx;
   const hobject_t& soid = ctx->obs->oi.soid;
@@ -7388,7 +7389,7 @@ void ReplicatedPG::issue_repop(RepGather *repop)
       pinfo.last_update = ctx->at_version;
     }
   }
-
+  // 对object，clone object以及snapdir object加锁
   repop->obc->ondisk_write_lock();
   if (repop->ctx->clone_obc)
     repop->ctx->clone_obc->ondisk_write_lock();
@@ -7410,8 +7411,8 @@ void ReplicatedPG::issue_repop(RepGather *repop)
       assert(!i->mod_desc.empty());
     }
   }
-
-  Context *on_all_commit = new C_OSD_RepopCommit(this, repop);
+  //构建回调对象,为事务注册回调函数
+  Context *on_all_commit = new C_OSD_RepopCommit(this, repop);//用于该事物对应的所有OSD节点的回调，包括主节点和其它副本节点
   Context *on_all_applied = new C_OSD_RepopApplied(this, repop);
   Context *onapplied_sync = new C_OSD_OndiskWriteUnlock(
     repop->obc,
@@ -7431,14 +7432,14 @@ void ReplicatedPG::issue_repop(RepGather *repop)
     repop->rep_tid,
     repop->ctx->reqid,
     repop->ctx->op);
-  repop->ctx->op_t = NULL;
+  repop->ctx->op_t = NULL;//操作事物已经提交
 }
 
 ReplicatedPG::RepGather *ReplicatedPG::new_repop(OpContext *ctx, ObjectContextRef obc,
 						 ceph_tid_t rep_tid)
 {
   if (ctx->op)
-    dout(10) << "new_repop rep_tid " << rep_tid << " on " << *ctx->op->get_req() << dendl;
+    dout(10) << "new_repop rep_tid " << rep_tid << " on " << *ctx->op->get_req() << dendl;//rbd写的流程分支
   else
     dout(10) << "new_repop rep_tid " << rep_tid << " (no op)" << dendl;
 
@@ -7446,7 +7447,7 @@ ReplicatedPG::RepGather *ReplicatedPG::new_repop(OpContext *ctx, ObjectContextRe
 
   repop->start = ceph_clock_now(cct);
 
-  repop_queue.push_back(&repop->queue_item);
+  repop_queue.push_back(&repop->queue_item);//将其加入到相应的队列和链表中
   repop_map[repop->rep_tid] = repop;
   repop->get();
 
@@ -7459,7 +7460,7 @@ void ReplicatedPG::remove_repop(RepGather *repop)
 {
   dout(20) << __func__ << " " << *repop << dendl;
   if (repop->ctx->obc)
-    dout(20) << " obc " << *repop->ctx->obc << dendl;
+    dout(20) << " obc " << *repop->ctx->obc << dendl;//rbd写流程分支
   if (repop->ctx->clone_obc)
     dout(20) << " clone_obc " << *repop->ctx->clone_obc << dendl;
   if (repop->ctx->snapset_obc)
@@ -7698,7 +7699,7 @@ ObjectContextRef ReplicatedPG::get_object_context(const hobject_t& soid,
     } else {
       int r = pgbackend->objects_get_attr(soid, OI_ATTR, &bv);
       if (r < 0) {
-	if (!can_create) {
+	if (!can_create) {//如果在磁盘上查找不到
 	  dout(10) << __func__ << ": no obc for soid "
 		   << soid << " and !can_create"
 		   << dendl;
@@ -7709,7 +7710,7 @@ ObjectContextRef ReplicatedPG::get_object_context(const hobject_t& soid,
 		 << soid << " but can_create"
 		 << dendl;
 	// new object.
-	object_info_t oi(soid);
+	object_info_t oi(soid);// 每个object.head/snapdir/snap都有一个对应的object_info_t结构体
 	SnapSetContext *ssc = get_snapset_context(
 	  soid, true,
 	  soid.has_snapset() ? attrs : 0);
@@ -7737,7 +7738,7 @@ ObjectContextRef ReplicatedPG::get_object_context(const hobject_t& soid,
       soid.has_snapset() ? attrs : 0);
 
     if (is_active())
-      populate_obc_watchers(obc);
+      populate_obc_watchers(obc);//rbd写流程
 
     if (pool.info.require_rollback()) {
       if (attrs) {
@@ -7751,7 +7752,7 @@ ObjectContextRef ReplicatedPG::get_object_context(const hobject_t& soid,
     }
 
     dout(10) << __func__ << ": creating obc from disk: " << obc
-	     << dendl;
+	     << dendl;//rbd写流程
   }
   assert(obc->ssc);
   dout(10) << __func__ << ": " << obc << " " << soid
@@ -8581,8 +8582,8 @@ void ReplicatedPG::apply_and_flush_repops(bool requeue)
 
   // apply all repops
   while (!repop_queue.empty()) {
-    RepGather *repop = repop_queue.front();
-    repop_queue.pop_front();
+    RepGather *repop = repop_queue.front();//获得xlist首元素的引用。
+    repop_queue.pop_front();//删除xlist中第一个item
     dout(10) << " canceling repop tid " << repop->rep_tid << dendl;
     repop->rep_aborted = true;
     if (repop->on_applied) {
@@ -8713,7 +8714,7 @@ void ReplicatedPG::on_shutdown()
 void ReplicatedPG::on_activate()
 {
   // all clean?
-  if (needs_recovery()) {
+  if (needs_recovery()) {//判断是否需要进行recovery数据的恢复
     dout(10) << "activate not all replicas are up-to-date, queueing recovery" << dendl;
     queue_peering_event(
       CephPeeringEvtRef(
@@ -8721,7 +8722,7 @@ void ReplicatedPG::on_activate()
 	  get_osdmap()->get_epoch(),
 	  get_osdmap()->get_epoch(),
 	  DoRecovery())));
-  } else if (needs_backfill()) {
+  } else if (needs_backfill()) {//判断是否需要进行backfill数据恢复
     dout(10) << "activate queueing backfill" << dendl;
     queue_peering_event(
       CephPeeringEvtRef(
@@ -9134,7 +9135,7 @@ bool ReplicatedPG::start_recovery_ops(
           new CephPeeringEvt(
             get_osdmap()->get_epoch(),
             get_osdmap()->get_epoch(),
-            AllReplicasRecovered())));
+            AllReplicasRecovered())));//如果不需要进行backfill处理，这时代表所有的数据恢复都完成了，则发送事件AllReplicasRecovered
     }
   } else { // backfilling
     state_clear(PG_STATE_BACKFILL);

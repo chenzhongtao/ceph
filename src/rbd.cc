@@ -438,6 +438,7 @@ static int do_list(librbd::RBD &rbd, librados::IoCtx& io_ctx, bool lflag,
   return 0;
 }
 
+//# rbd=..., io_ctx=..., imgname=0x2b95e10 "volume-3", size=2147483648, order=0x7fffffffdb44, format=1, features=1, stripe_unit=0, stripe_count=0
 static int do_create(librbd::RBD &rbd, librados::IoCtx& io_ctx,
 		     const char *imgname, uint64_t size, int *order,
 		     int format, uint64_t features,

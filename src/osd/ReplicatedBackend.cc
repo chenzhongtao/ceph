@@ -188,7 +188,7 @@ bool ReplicatedBackend::handle_message(
 	break;
       }
     } else {
-      sub_op_modify(op);
+      sub_op_modify(op);//这个是从OSD上执行的
       return true;
     }
     break;
@@ -199,7 +199,7 @@ bool ReplicatedBackend::handle_message(
     return true;
   }
 
-  case MSG_OSD_SUBOPREPLY: {
+  case MSG_OSD_SUBOPREPLY: {//接受从PG的OSD的消息，即从OSD的消息
     MOSDSubOpReply *r = static_cast<MOSDSubOpReply*>(op->get_req());
     if (r->ops.size() >= 1) {
       OSDOp &first = r->ops[0];
@@ -345,7 +345,7 @@ public:
   RPGTransaction(coll_t coll, coll_t temp_coll, bool use_tbl)
     : coll(coll), temp_coll(temp_coll), t(new ObjectStore::Transaction), written(0)
     {
-      t->set_use_tbl(use_tbl);
+      t->set_use_tbl(use_tbl);//修改了Transaction构造函数传入的默认值
     }
 
   /// Yields ownership of contained transaction
@@ -520,7 +520,7 @@ public:
 
 PGBackend::PGTransaction *ReplicatedBackend::get_transaction()
 {
-  return new RPGTransaction(coll, get_temp_coll(), parent->transaction_use_tbl());
+  return new RPGTransaction(coll, get_temp_coll(), parent->transaction_use_tbl());//RPGTransaction类也在该文件
 }
 
 class C_OSD_OnOpCommit : public Context {
@@ -553,7 +553,7 @@ void ReplicatedBackend::submit_transaction(
   const eversion_t &trim_rollback_to,
   const vector<pg_log_entry_t> &log_entries,
   boost::optional<pg_hit_set_history_t> &hset_history,
-  Context *on_local_applied_sync,
+  Context *on_local_applied_sync,//new C_OSD_OndiskWriteUnlock
   Context *on_all_acked,
   Context *on_all_commit,
   ceph_tid_t tid,
@@ -562,22 +562,22 @@ void ReplicatedBackend::submit_transaction(
 {
   RPGTransaction *t = dynamic_cast<RPGTransaction*>(_t);
   assert(t);
-  ObjectStore::Transaction *op_t = t->get_transaction();
+  ObjectStore::Transaction *op_t = t->get_transaction();//返回RPGTransaction的成员ObjectStore::Transaction *t
 
   assert(t->get_temp_added().size() <= 1);
   assert(t->get_temp_cleared().size() <= 1);
-
+  //pgbackend使用结构体InProgressOp来描述被提交的事务，包括事务的id、执行事务的peer replica，以及上层提供的回调等。Pgbackend在收到所有peer replica的时候执行回调
   assert(!in_progress_ops.count(tid));
   InProgressOp &op = in_progress_ops.insert(
     make_pair(
       tid,
       InProgressOp(
-	tid, on_all_commit, on_all_acked,
+	tid, on_all_commit, on_all_acked,//分别对应on_all_commit和on_all_applied两个参数，complete回调时区分
 	orig_op, at_version)
       )
     ).first->second;
 
-  op.waiting_for_applied.insert(
+  op.waiting_for_applied.insert(// 将acting和backfile osd加入到该InProgress结构体中
     parent->get_actingbackfill_shards().begin(),
     parent->get_actingbackfill_shards().end());
   op.waiting_for_commit.insert(
@@ -585,7 +585,7 @@ void ReplicatedBackend::submit_transaction(
     parent->get_actingbackfill_shards().end());
 
 
-  issue_op(
+  issue_op(//向副本发送日志项以及事务
     soid,
     at_version,
     tid,
@@ -608,7 +608,7 @@ void ReplicatedBackend::submit_transaction(
   }
   clear_temp_objs(t->get_temp_cleared());
 
-  parent->log_operation(
+  parent->log_operation(//记录本端操作object的log。这个log对于数据的恢复存在至关重要的决定
     log_entries,
     hset_history,
     trim_to,
@@ -617,34 +617,43 @@ void ReplicatedBackend::submit_transaction(
     &local_t);
 
   local_t.append(*op_t);
-  local_t.swap(*op_t);
-  
+  local_t.swap(*op_t);//交换两个变量的值
+
+  //zhangmin add 此处注册回调函数，加入到Transaction类中的list<Context *>中
+  //zhangmin add 在FileStore::queue_transactions中取出来
   op_t->register_on_applied_sync(on_local_applied_sync);
-  op_t->register_on_applied(
+  op_t->register_on_applied(//注册本端的applied回调函数，这里回调后会直接向上回调all_applied()
     parent->bless_context(
-      new C_OSD_OnOpApplied(this, &op)));
+      new C_OSD_OnOpApplied(this, &op)));//返回BlessedContext对象
   op_t->register_on_applied(
     new ObjectStore::C_DeleteTransaction(op_t));
-  op_t->register_on_commit(
-    parent->bless_context(
-      new C_OSD_OnOpCommit(this, &op)));
-      
-  parent->queue_transaction(op_t, op.op);
+  op_t->register_on_commit(//注册本端的commit回调函数，这里回调后直接向上回调all_commited()
+    parent->bless_context(//bless_context定义位于ReplicatedPG.h中
+      new C_OSD_OnOpCommit(this, &op)));//虽然和上面传入的参数一样，在finish函数里面会区分
+
+  //zhangmin add 这里调用的是父类PGBackend成员Listener类的queue_transaction函数
+  //zhangmin add 实现位于继承了Listener类的ReplicatedPG中，实现如下:
+  //void queue_transaction(ObjectStore::Transaction *t, OpRequestRef op) {
+  //  osd->store->queue_transaction(osr.get(), t, 0, 0, 0, op);
+  //} 这里osd对应父类PG的成员OSDService *osd
+  //  进一步到OSDService的成员 ObjectStore *&store
+  //  从而调用到ObjectStore的queue_transaction
+  parent->queue_transaction(op_t, op.op);// ---------- 这里传入的op_t是transaction，里面有三个list<Context *>成员
   delete t;
 }
 
-void ReplicatedBackend::op_applied(
+void ReplicatedBackend::op_applied(//journal的写入操作回调
   InProgressOp *op)
 {
-  dout(10) << __func__ << ": " << op->tid << dendl;
+  dout(10) << __func__ << ": " << op->tid << dendl;//tid表示事物ID
   if (op->op)
     op->op->mark_event("op_applied");
-
+  //开始删除在等待队列中的本端osd序号。这样表示本端已经处理完成了
   op->waiting_for_applied.erase(get_parent()->whoami_shard());
-  parent->op_applied(op->v);
+  parent->op_applied(op->v);//parent对应Listener对象，op_applied对应的实现在子类ReplicatedPG中
 
-  if (op->waiting_for_applied.empty()) {
-    op->on_applied->complete(0);
+  if (op->waiting_for_applied.empty()) {//检查是不是所有的等待在waiting_for_applied队列上的osd都完成了用户客户端发过来的OP操作
+    op->on_applied->complete(0);////调用的Context的complete，是C_OSD_RepopApplied的finish函数
     op->on_applied = 0;
   }
   if (op->done()) {
@@ -653,17 +662,17 @@ void ReplicatedBackend::op_applied(
   }
 }
 
-void ReplicatedBackend::op_commit(
+void ReplicatedBackend::op_commit(//磁盘的写入操作回调
   InProgressOp *op)
 {
   dout(10) << __func__ << ": " << op->tid << dendl;
   if (op->op)
-    op->op->mark_event("op_commit");
+    op->op->mark_event("op_commit");//waiting_for_commit是记录所有下发了写事物的OSD，完成一个则减掉一个
 
-  op->waiting_for_commit.erase(get_parent()->whoami_shard());
+  op->waiting_for_commit.erase(get_parent()->whoami_shard());//主OSD自己Journal操作完成，减掉自己这个OSD
 
   if (op->waiting_for_commit.empty()) {
-    op->on_commit->complete(0);
+    op->on_commit->complete(0);//调用的Context的complete，是C_OSD_RepopCommit的finish函数
     op->on_commit = 0;
   }
   if (op->done()) {
@@ -675,7 +684,7 @@ void ReplicatedBackend::op_commit(
 template<typename T, int MSGTYPE>
 void ReplicatedBackend::sub_op_modify_reply(OpRequestRef op)
 {
-  T *r = static_cast<T *>(op->get_req());
+  T *r = static_cast<T *>(op->get_req());//MOSDSubOpReply
   assert(r->get_header().type == MSGTYPE);
   assert(MSGTYPE == MSG_OSD_SUBOPREPLY || MSGTYPE == MSG_OSD_REPOPREPLY);
 
@@ -688,7 +697,7 @@ void ReplicatedBackend::sub_op_modify_reply(OpRequestRef op)
   if (in_progress_ops.count(rep_tid)) {
     map<ceph_tid_t, InProgressOp>::iterator iter =
       in_progress_ops.find(rep_tid);
-    InProgressOp &ip_op = iter->second;
+    InProgressOp &ip_op = iter->second; //对应之前主OSD上用on_all_commit, on_all_acked构造的InProgressOp对象
     MOSDOp *m = NULL;
     if (ip_op.op)
       m = static_cast<MOSDOp *>(ip_op.op->get_req());
@@ -697,7 +706,7 @@ void ReplicatedBackend::sub_op_modify_reply(OpRequestRef op)
       dout(7) << __func__ << ": tid " << ip_op.tid << " op " //<< *m
 	      << " ack_type " << (int)r->ack_type
 	      << " from " << from
-	      << dendl;
+	      << dendl;//日志打印走的是这个分支
     else
       dout(7) << __func__ << ": tid " << ip_op.tid << " (no op) "
 	      << " ack_type " << (int)r->ack_type
@@ -707,29 +716,31 @@ void ReplicatedBackend::sub_op_modify_reply(OpRequestRef op)
     // oh, good.
 
     if (r->ack_type & CEPH_OSD_FLAG_ONDISK) {
-      assert(ip_op.waiting_for_commit.count(from));
-      ip_op.waiting_for_commit.erase(from);
+      assert(ip_op.waiting_for_commit.count(from));//from这个osd必须要在waiting_for_commit中
+      ip_op.waiting_for_commit.erase(from);//waiting_for_commit从完成commit的osd列表中去掉返回reply的osd
       if (ip_op.op)
 	ip_op.op->mark_event("sub_op_commit_rec");
     } else {
-      assert(ip_op.waiting_for_applied.count(from));
+      assert(ip_op.waiting_for_applied.count(from));//from这个osd必须要在waiting_for_applied中
       if (ip_op.op)
 	ip_op.op->mark_event("sub_op_applied_rec");
     }
-    ip_op.waiting_for_applied.erase(from);
+
+	//如果先回复的是apply消息，则下面在commit消息回复的时候，还会再减一次，这样一个from被减两次，会有问题不?
+    ip_op.waiting_for_applied.erase(from);//一般情况，apply会是在commit后面返回，因为commit先返回执行到这里
 
     parent->update_peer_last_complete_ondisk(
       from,
       r->get_last_complete_ondisk());
 
-    if (ip_op.waiting_for_applied.empty() &&
+    if (ip_op.waiting_for_applied.empty() &&//副本OSD全部返回，wait列表为空
         ip_op.on_applied) {
-      ip_op.on_applied->complete(0);
+      ip_op.on_applied->complete(0);//这里执行的是C_OSD_RepopApplied中的finish函数ReplicatedPG::repop_all_applied
       ip_op.on_applied = 0;
     }
-    if (ip_op.waiting_for_commit.empty() &&
+    if (ip_op.waiting_for_commit.empty() &&////副本OSD全部返回,wait列表为空
         ip_op.on_commit) {
-      ip_op.on_commit->complete(0);
+      ip_op.on_commit->complete(0);//这里执行的是C_OSD_RepopCommit中的finish函数ReplicatedPG::repop_all_committed
       ip_op.on_commit= 0;
     }
     if (ip_op.done()) {
@@ -1009,7 +1020,7 @@ Message * ReplicatedBackend::generate_subop(
     t.set_use_tbl(op_t->get_use_tbl());
     ::encode(t, wr->get_data());
   } else {
-    ::encode(*op_t, wr->get_data());
+    ::encode(*op_t, wr->get_data());//wr->get_data()返回Message成员bufferlist data，将前面的事物encode到该bufferlist中
   }
 
   ::encode(log_entries, wr->logbl);
@@ -1045,8 +1056,8 @@ void ReplicatedBackend::issue_op(
 
   if (parent->get_actingbackfill_shards().size() > 1) {
     ostringstream ss;
-    set<pg_shard_t> replicas = parent->get_actingbackfill_shards();
-    replicas.erase(parent->whoami_shard());
+    set<pg_shard_t> replicas = parent->get_actingbackfill_shards();//ReplicatedPG继承Listener实现该接口
+    replicas.erase(parent->whoami_shard());//这个表示当前所在的这个osd
     ss << "waiting for subops from " << replicas;
     if (op->op)
       op->op->mark_sub_op_sent(ss.str());
@@ -1055,13 +1066,13 @@ void ReplicatedBackend::issue_op(
 	 parent->get_actingbackfill_shards().begin();
        i != parent->get_actingbackfill_shards().end();
        ++i) {
-    if (*i == parent->whoami_shard()) continue;
+    if (*i == parent->whoami_shard()) continue;//这个表示当前所在的这个osd,跳过
     pg_shard_t peer = *i;
-    const pg_info_t &pinfo = parent->get_shard_info().find(peer)->second;
+    const pg_info_t &pinfo = parent->get_shard_info().find(peer)->second;//PGBackend中的parent成员
 
     Message *wr;
-    uint64_t min_features = parent->min_peer_features();
-    if (!(min_features & CEPH_FEATURE_OSD_REPOP)) {
+    uint64_t min_features = parent->min_peer_features();//返回的是PG类的成员uint64_t peer_features;
+    if (!(min_features & CEPH_FEATURE_OSD_REPOP)) {//相与值为400...，这里值为True，取反为False
       dout(20) << "Talking to old version of OSD, doesn't support RepOp, fall back to SubOp" << dendl;
       wr = generate_subop<MOSDSubOp, MSG_OSD_SUBOP>(
 	    soid,
@@ -1071,15 +1082,15 @@ void ReplicatedBackend::issue_op(
 	    pg_trim_to,
 	    pg_trim_rollback_to,
 	    new_temp_oid,
-	    discard_temp_oid,
+	    discard_temp_oid,//如果peer端的min_features不支持REPOP，则进入该分支，向peer端发送MSG_OSD_SUBOP兼容旧版本的OSD
 	    log_entries,
 	    hset_hist,
 	    op,
 	    op_t,
 	    peer,
-	    pinfo);
+	    pinfo);//没有进入这个分支
     } else {
-      wr = generate_subop<MOSDRepOp, MSG_OSD_REPOP>(
+      wr = generate_subop<MOSDRepOp, MSG_OSD_REPOP>(//构建一个新的消息MOSDRepOp对象
 	    soid,
 	    at_version,
 	    tid,
@@ -1096,7 +1107,7 @@ void ReplicatedBackend::issue_op(
 	    pinfo);
     }
 
-    get_parent()->send_message_osd_cluster(
+    get_parent()->send_message_osd_cluster(//给所有slave osd发送信息
       peer.osd, wr, get_osdmap()->get_epoch());
   }
 }
@@ -1114,7 +1125,7 @@ void ReplicatedBackend::sub_op_modify(OpRequestRef op) {
   }
 }
 
-template<typename T, int MSGTYPE>
+template<typename T, int MSGTYPE>//zhangmin add 函数模板用法
 void ReplicatedBackend::sub_op_modify_impl(OpRequestRef op)
 {
   T *m = static_cast<T *>(op->get_req());
@@ -1141,7 +1152,7 @@ void ReplicatedBackend::sub_op_modify_impl(OpRequestRef op)
 
   op->mark_started();
 
-  RepModifyRef rm(new RepModify);
+  RepModifyRef rm(new RepModify);  //对应RepModify类型
   rm->op = op;
   rm->ackerosd = ackerosd;
   rm->last_complete = get_info().last_complete;
@@ -1151,11 +1162,11 @@ void ReplicatedBackend::sub_op_modify_impl(OpRequestRef op)
   // shipped transaction and log entries
   vector<pg_log_entry_t> log;
 
-  bufferlist::iterator p = m->get_data().begin();
-  ::decode(rm->opt, p);
+  bufferlist::iterator p = m->get_data().begin();//获取消息中包含的data
+  ::decode(rm->opt, p);//将data中的事物解码保存到rm->opt中
   rm->localt.set_use_tbl(rm->opt.get_use_tbl());
 
-  if (m->new_temp_oid != hobject_t()) {
+  if (m->new_temp_oid != hobject_t()) {//这个分支未进入
     dout(20) << __func__ << " start tracking temp " << m->new_temp_oid << dendl;
     add_temp_obj(m->new_temp_oid);
     get_temp_coll(&rm->localt);
@@ -1197,12 +1208,12 @@ void ReplicatedBackend::sub_op_modify_impl(OpRequestRef op)
 
   rm->localt.append(rm->opt);
   rm->localt.register_on_commit(
-    parent->bless_context(
+    parent->bless_context(//这里注册的两个回调
       new C_OSD_RepModifyCommit(this, rm)));
   rm->localt.register_on_applied(
     parent->bless_context(
       new C_OSD_RepModifyApply(this, rm)));
-  parent->queue_transaction(&(rm->localt), op);
+  parent->queue_transaction(&(rm->localt), op);   //zhangmin add此处的parent对应的是PGBackend的成员Listener *parent;
   // op is cleaned up by oncommit/onapply when both are executed
 }
 
@@ -1250,7 +1261,7 @@ void ReplicatedBackend::sub_op_modify_applied(RepModifyRef rm)
 void ReplicatedBackend::sub_op_modify_commit(RepModifyRef rm)
 {
   rm->op->mark_commit_sent();
-  rm->committed = true;
+  rm->committed = true;//有了这个设置，则上面的apply如果在commit之后才执行，则不会发送reply消息给主OSD
 
   // send commit.
   dout(10) << "sub_op_modify_commit on op " << *rm->op->get_req()
@@ -1260,7 +1271,7 @@ void ReplicatedBackend::sub_op_modify_commit(RepModifyRef rm)
   assert(get_osdmap()->is_up(rm->ackerosd));
   get_parent()->update_last_complete_ondisk(rm->last_complete);
 
-  Message *m = rm->op->get_req();
+  Message *m = rm->op->get_req();//获取主OSD发送过来的消息，构造对应的reply消息返回到主OSD
   Message *commit;
   if (m->get_type() == MSG_OSD_SUBOP) {
     // doesn't have CLIENT SUBOP feature ,use Subop
@@ -1972,11 +1983,11 @@ void ReplicatedBackend::send_pulls(int prio, map<pg_shard_t, vector<PullOp> > &p
     }
   }
 }
-
+//一个push message包含了多个object，这些object的数据在build_push_op中被填充
 int ReplicatedBackend::build_push_op(const ObjectRecoveryInfo &recovery_info,
 				     const ObjectRecoveryProgress &progress,
 				     ObjectRecoveryProgress *out_progress,
-				     PushOp *out_op,
+				     PushOp *out_op,//struct PushOp定义位于osd_type.h的3437行
 				     object_stat_sum_t *stat)
 {
   ObjectRecoveryProgress _new_progress;
@@ -2088,7 +2099,7 @@ int ReplicatedBackend::build_push_op(const ObjectRecoveryInfo &recovery_info,
       out_op->data.claim_append(bit);
       break;
     }
-    out_op->data.claim_append(bit);
+    out_op->data.claim_append(bit);//将数据append到pushes里面统一发送，这样提高了系统recovery的吞吐量，避免单一object的copy
   }
 
   if (new_progress.is_complete(recovery_info)) {

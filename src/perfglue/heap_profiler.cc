@@ -87,7 +87,7 @@ void ceph_heap_profiler_start()
   get_profile_name(profile_name, sizeof(profile_name)); 
   generic_dout(0) << "turning on heap profiler with prefix "
 		  << profile_name << dendl;
-  HeapProfilerStart(profile_name);
+  HeapProfilerStart(profile_name); //# sGoogle Perftools
 }
 
 void ceph_heap_profiler_stop()

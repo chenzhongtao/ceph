@@ -47,7 +47,7 @@ struct ceph_entity_name {
 	__u8 type;      /* CEPH_ENTITY_TYPE_* */
 	__le64 num;
 } __attribute__ ((packed));
-
+///消息发送端，可以彼此之间发送消息
 #define CEPH_ENTITY_TYPE_MON    0x01
 #define CEPH_ENTITY_TYPE_MDS    0x02
 #define CEPH_ENTITY_TYPE_OSD    0x04
@@ -140,14 +140,14 @@ struct ceph_msg_header_old {
 	struct ceph_entity_inst src, orig_src;
 	__le32 reserved;
 	__le32 crc;       /* header crc32c */
-} __attribute__ ((packed));
+} __attribute__ ((packed)); //# 作用就是告诉编译器取消结构在编译过程中的优化对齐,按照实际占用字节数进行对齐
 
 struct ceph_msg_header {
-	__le64 seq;       /* message seq# for this session */
-	__le64 tid;       /* transaction id */
-	__le16 type;      /* message type */
-	__le16 priority;  /* priority.  higher value == higher priority */
-	__le16 version;   /* version of message encoding */
+	__le64 seq;       /* message seq# for this session */  //# 每个pipe都有这个属性 uint64_t out_seq; 记录消息的seq从1开始
+	__le64 tid;       /* transaction id */   //# 具体消息实例化会调用 set_tid(tid)   函数 Objecter::_op_submit
+	__le16 type;      /* message type */    //# Message构造函数中初始化 MOSDOp实例化会调用 Message(CEPH_MSG_OSD_OP, HEAD_VERSION, COMPAT_VERSION) 
+	__le16 priority;  /* priority.  higher value == higher priority */  //# Message构造函数中初始化 udef
+	__le16 version;   /* version of message encoding */  //# Message构造函数中初始化 
 
 	__le32 front_len; /* bytes in main payload */
 	__le32 middle_len;/* bytes in middle payload */
@@ -158,7 +158,7 @@ struct ceph_msg_header {
 	struct ceph_entity_name src;
 
 	/* oldest code we think can decode this.  unknown if zero. */
-	__le16 compat_version;
+	__le16 compat_version;  //# Message构造函数中初始化
 	__le16 reserved;
 	__le32 crc;       /* header crc32c */
 } __attribute__ ((packed));

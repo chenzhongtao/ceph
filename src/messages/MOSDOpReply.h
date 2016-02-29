@@ -39,7 +39,7 @@ class MOSDOpReply : public Message {
   pg_t pgid;
   vector<OSDOp> ops;
   int64_t flags;
-  int32_t result;
+  int32_t result; //# ·µ»ØÖµ
   eversion_t bad_replay_version;
   eversion_t replay_version;
   version_t user_version;

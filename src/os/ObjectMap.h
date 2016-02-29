@@ -26,7 +26,7 @@
  *
  * Implementations of this interface will be used to implement TMAP
  */
-class ObjectMap {
+class ObjectMap {//对象的omap的接口
 public:
   /// Set keys and values from specified map
   virtual int set_keys(

@@ -122,14 +122,14 @@ public:
   virtual objectstore_perf_stat_t get_cur_stats() = 0;
 
   /**
-   * a sequencer orders transactions
+   * a sequencer orders transactions//有序的事物队列
    *
-   * Any transactions queued under a given sequencer will be applied in
+   * Any transactions queued under a given sequencer will be applied in//被顺序执行
    * sequence.  Transactions queued under different sequencers may run
    * in parallel.
    *
    * Clients of ObjectStore create and maintain their own Sequencer objects.
-   * When a list of transactions is queued the caller specifies a Sequencer to be used.
+   * When a list of transactions is queued the caller specifies a Sequencer(定序器) to be used.
    *
    */
 
@@ -137,8 +137,8 @@ public:
    * ABC for Sequencer implementation, private to the ObjectStore derived class.
    * created in ...::queue_transaction(s)
    */
-  struct Sequencer_impl {
-    virtual void flush() = 0;
+  struct Sequencer_impl {//zhangmin add 在这里是public成员，在ObjectStore子类FileStore中被OpSequencer继承
+    virtual void flush() = 0;                  //OpSequencer在FileStore中为private成员
 
     /**
      * Async flush_commit
@@ -178,7 +178,7 @@ public:
     /// wait for any queued transactions on this sequencer to apply
     void flush() {
       if (p)
-	p->flush();
+	p->flush();//这里调用的是OpSequencer中实现的flush
     }
 
     /// @see Sequencer_impl::flush_commit()
@@ -194,19 +194,19 @@ public:
 
   /*********************************
    *
-   * Object Contents and semantics
+   * Object Contents and semantics 语义
    *
    * All ObjectStore objects are identified as a named object
    * (ghobject_t and hobject_t) in a named collection (coll_t).
    * ObjectStore operations support the creation, mutation, deletion
-   * and enumeration of objects within a collection.  Enumeration is
+   * and enumeration 列举 of objects within a collection.  Enumeration is
    * in sorted key order (where keys are sorted by hash). Object names
    * are globally unique.
    *
    * Each object has four distinct parts: byte data, xattrs, omap_header
-   * and omap entries.
+   * and omap entries. 四个不同的部分
    *
-   * The data portion of an object is conceptually equivalent to a
+   * The data portion局部 of an object is conceptually equivalent to a
    * file in a file system. Random and Partial access for both read
    * and write operations is required. The ability to have a sparse
    * implementation of the data portion of an object is beneficial for
@@ -221,19 +221,19 @@ public:
    * total size of all of the xattrs on an object to be relatively
    * small, i.e., less than 64KB. Much of Ceph assumes that accessing
    * xattrs on temporally adjacent object accesses (recent past or
-   * near future) is inexpensive.
+   * near future) is inexpensive. //刚过去的或不久的将来
    *
    * omap_header is a single blob of data. It can be read or written
    * in total.
    *
    * Omap entries are conceptually the same as xattrs
    * but in a different address space. In other words, you can have
-   * the same key as an xattr and an omap entry and they have distinct
+   * the same key as an xattr and an omap entry and they have distinct完全不同的
    * values. Enumeration of xattrs doesn't include omap entries and
    * vice versa. The size and access characteristics of omap entries
    * are very different from xattrs. In particular, the value portion
    * of an omap entry can be quite large (MBs).  More importantly, the
-   * interface must support efficient range queries on omap entries even
+   * interface must support efficient range queries有效范围查询 on omap entries even
    * when there are a large numbers of entries.
    *
    *********************************/
@@ -253,8 +253,8 @@ public:
   /*********************************
    * transaction
    *
-   * A Transaction represents a sequence of primitive mutation
-   * operations.
+   * A Transaction represents a sequence of primitive原始 mutation修改
+   * operations. ----- 一系列的操作
    *
    * Three events in the life of a Transaction result in
    * callbacks. Any Transaction can contain any number of callback
@@ -307,7 +307,7 @@ public:
    *   relevant.
    *
    *
-   * TRANSACTION ISOLATION
+   * TRANSACTION ISOLATION隔离
    *
    * Except as noted below, isolation is the responsibility of the
    * caller. In other words, if any storage element (storage element
@@ -316,7 +316,7 @@ public:
    * promises not to attempt to read that element while the
    * transaction is pending (here pending means from the time of
    * issuance until the "on_applied_sync" callback has been
-   * received). Violations of isolation need not be detected by
+   * received). Violations违反 of isolation need not be detected by
    * ObjectStore and there is no corresponding error mechanism for
    * reporting an isolation violation (crashing would be the
    * appropriate way to report an isolation violation if detected).
@@ -442,7 +442,7 @@ public:
     bufferlist data_bl;
     bufferlist op_bl;
 
-    bufferptr op_ptr;
+    bufferptr op_ptr;//typedef buffer::ptr bufferptr;定义位于buffer.h
 
     list<Context *> on_applied;
     list<Context *> on_commit;
@@ -470,7 +470,7 @@ public:
       register_on_commit(new ContainerContext<RunOnDeleteRef>(_complete));
     }
 
-    static void collect_contexts(
+    static void collect_contexts(//从Transaction的成员list中取出对应的Context item
       list<Transaction *> &t,
       Context **out_on_applied,
       Context **out_on_commit,
@@ -482,7 +482,7 @@ public:
       for (list<Transaction *>::iterator i = t.begin();
 	   i != t.end();
 	   ++i) {
-	on_applied.splice(on_applied.end(), (*i)->on_applied);
+	on_applied.splice(on_applied.end(), (*i)->on_applied);//这里从Transaction中的on_applied取出对应的item
 	on_commit.splice(on_commit.end(), (*i)->on_commit);
 	on_applied_sync.splice(on_applied_sync.end(), (*i)->on_applied_sync);
       }
@@ -874,7 +874,7 @@ private:
         op_ptr = bufferptr(sizeof(Op) * OPS_PER_PTR);
 	op_ptr.zero();
       }
-      bufferptr ptr(op_ptr, 0, sizeof(Op));
+      bufferptr ptr(op_ptr, 0, sizeof(Op));//typedef buffer::ptr bufferptr;定义位于buffer.h
       op_bl.append(ptr);
 
       op_ptr.set_offset(op_ptr.offset() + sizeof(Op));
@@ -1189,7 +1189,7 @@ public:
       }
       data.ops++;
     }
-    /// Create the collection
+    /// Create the collection -- 调用了类transaction中的函数，把操作类型和参数通过encode函数序列化到tbl中
     void create_collection(coll_t cid) {
       if (use_tbl) {
         __u32 op = OP_MKCOLL;
@@ -1689,14 +1689,15 @@ public:
 	                      NULL, NULL, TrackedOpRef(), handle);
   }
 
+  //zhangmin add 这里被ReplicatedPG.h的queue_transaction调用，只传入了六个参数，最后一个用默认值
   int queue_transaction(Sequencer *osr, Transaction *t, Context *onreadable, Context *ondisk=0,
 				Context *onreadable_sync=0,
-				TrackedOpRef op = TrackedOpRef(),
+				TrackedOpRef op = TrackedOpRef(),//zhangmin add TrackedOp的子类为OpRequest
 				ThreadPool::TPHandle *handle = NULL) {
     list<Transaction*> tls;
     tls.push_back(t);
     return queue_transactions(osr, tls, onreadable, ondisk, onreadable_sync,
-	                      op, handle);
+	                      op, handle); //调用1703行的queue_transactions
   }
 
   int queue_transactions(Sequencer *osr, list<Transaction*>& tls,
@@ -1708,13 +1709,13 @@ public:
     tls.back()->register_on_applied(onreadable);
     tls.back()->register_on_commit(ondisk);
     tls.back()->register_on_applied_sync(onreadable_sync);
-    return queue_transactions(osr, tls, op, handle);
+    return queue_transactions(osr, tls, op, handle);//调用1715行的queue_transactions，具体实现在filestore里面
   }
 
   virtual int queue_transactions(
     Sequencer *osr, list<Transaction*>& tls,
     TrackedOpRef op = TrackedOpRef(),
-    ThreadPool::TPHandle *handle = NULL) = 0;
+    ThreadPool::TPHandle *handle = NULL) = 0;//该虚函数的实现在FileStore.cc里面
 
 
   int queue_transactions(
@@ -1724,9 +1725,9 @@ public:
     Context *oncommit,
     Context *onreadable_sync,
     Context *oncomplete,
-    TrackedOpRef op);
+    TrackedOpRef op);//实现在ObjectStore.cc里面
 
-  int queue_transaction(
+  int queue_transaction(//这里参数和上面不一样，在RemoveWQ._process中被调用
     Sequencer *osr,
     Transaction* t,
     Context *onreadable,
@@ -1736,7 +1737,7 @@ public:
     TrackedOpRef op) {
     list<Transaction*> tls;
     tls.push_back(t);
-    return queue_transactions(
+    return queue_transactions(//zhangmin add 这里调用的是上面的queue_transactions，在ObjectStore.cc中定义的
       osr, tls, onreadable, oncommit, onreadable_sync, oncomplete, op);
   }
 

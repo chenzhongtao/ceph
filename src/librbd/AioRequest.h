@@ -46,12 +46,12 @@ namespace librbd {
     ImageCtx *m_ictx;
     std::string m_oid;
     uint64_t m_object_no, m_object_off, m_object_len;
-    librados::snap_t m_snap_id;
+    librados::snap_t m_snap_id; //# volume-1 本身的snap_id (-2)
     Context *m_completion;
     AioCompletion *m_parent_completion;
-    ceph::bufferlist m_read_data;
+    ceph::bufferlist m_read_data; //# 会被放到Op vector<bufferlist*> out_bl
     bool m_hide_enoent;
-    std::vector<librados::snap_t> m_snaps;
+    std::vector<librados::snap_t> m_snaps; //# volume-1所有快照id(2,4等)
   };
 
   class AioRead : public AioRequest {
@@ -167,10 +167,11 @@ namespace librbd {
 
   protected:
     write_state_d m_state;
-    vector<pair<uint64_t,uint64_t> > m_object_image_extents;
-    uint64_t m_parent_overlap;
-    librados::ObjectWriteOperation m_write;
-    uint64_t m_snap_seq;
+    //objectx 作用?
+    vector<pair<uint64_t,uint64_t> > m_object_image_extents; //# 克隆卷才会用到，没有发到osd上
+    uint64_t m_parent_overlap; //# 克隆卷才会用到，没有发到osd上
+    librados::ObjectWriteOperation m_write; //# Op的数据从这里交换过去，默认初始化
+    uint64_t m_snap_seq; //# SnapContext 有seq属性， 放的是最新快照的id?
     ceph::bufferlist *m_entire_object;
 
     virtual void add_write_ops(librados::ObjectWriteOperation *wr) = 0;
@@ -204,7 +205,7 @@ namespace librbd {
     }
     virtual ~AioWrite() {}
 
-    void set_op_flags(int op_flags) {
+    void set_op_flags(int op_flags) { //设置参数，这个参数的作用?
       m_op_flags = op_flags;
     }
   protected:
@@ -214,7 +215,7 @@ namespace librbd {
     }
 
   private:
-    ceph::bufferlist m_write_data;
+    ceph::bufferlist m_write_data; //要写的数据
     int m_op_flags;
   };
 

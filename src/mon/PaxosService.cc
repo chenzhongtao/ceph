@@ -35,12 +35,12 @@ static ostream& _prefix(std::ostream *_dout, Monitor *mon, Paxos *paxos, string 
 bool PaxosService::dispatch(PaxosServiceMessage *m)
 {
   dout(10) << "dispatch " << *m << " from " << m->get_orig_source_inst() << dendl;
-
+  //如果monitor down则返回该命令
   if (mon->is_shutdown()) {
     m->put();
     return true;
   }
-
+  //确定消息发送端的epoch比较新，不比该monitor的epoch小
   // make sure this message isn't forwarded from a previous election epoch
   if (m->rx_election_epoch &&
       m->rx_election_epoch < mon->get_epoch()) {
@@ -49,7 +49,7 @@ bool PaxosService::dispatch(PaxosServiceMessage *m)
     m->put();
     return true;
   }
-
+   //确定client端的connection仍然存在
   // make sure the client is still connected.  note that a proxied
   // connection will be disconnected with a null message; don't drop
   // those.  also ignore loopback (e.g., log) messages.
@@ -73,7 +73,7 @@ bool PaxosService::dispatch(PaxosServiceMessage *m)
   // preprocess
   if (preprocess_query(m)) 
     return true;  // easy!
-
+   //如果本monitor不是leader，则将该消息发送给leader
   // leader?
   if (!mon->is_leader()) {
     mon->forward_request_leader(m);

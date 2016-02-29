@@ -93,7 +93,7 @@ private:
   static const uint8_t flag_sub_op_sent = 1 << 4;
   static const uint8_t flag_commit_sent = 1 << 5;
 
-  OpRequest(Message *req, OpTracker *tracker);
+  OpRequest(Message *req, OpTracker *tracker);//函数定义位于OpRequest.cc文件中
 
 protected:
   void _dump_op_descriptor_unlocked(ostream& stream) const;

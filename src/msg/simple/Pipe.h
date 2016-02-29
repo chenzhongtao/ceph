@@ -147,7 +147,7 @@ class DispatchQueue;
 
     char *recv_buf;
     int recv_max_prefetch;
-    int recv_ofs;
+    int recv_ofs; //# buffer中已经被读的长度
     int recv_len;
 
     enum {
@@ -294,8 +294,9 @@ class DispatchQueue;
 
     void _send(Message *m) {
       assert(pipe_lock.is_locked());
-      out_q[m->get_priority()].push_back(m);
-      cond.Signal();
+      // 208 行
+      out_q[m->get_priority()].push_back(m); //# 把消息放在队列中
+      cond.Signal(); //# 通知pipe write去取
     }
     void _send_keepalive() {
       assert(pipe_lock.is_locked());

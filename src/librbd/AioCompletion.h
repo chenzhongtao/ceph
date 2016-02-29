@@ -51,7 +51,7 @@ namespace librbd {
     rbd_completion_t rbd_comp;
     int pending_count;   ///< number of requests
     uint32_t blockers;
-    int ref;
+    int ref;  //# 引用计数，为0时要回收内存
     bool released;
     ImageCtx *ictx;
     utime_t start_time;
@@ -79,7 +79,7 @@ namespace librbd {
 
     void add_request() {
       lock.Lock();
-      pending_count++;
+      pending_count++;  // number of requests
       lock.Unlock();
       get();
     }
@@ -114,7 +114,7 @@ namespace librbd {
     void get() {
       lock.Lock();
       assert(ref > 0);
-      ref++;
+      ref++;  //# 引用计数，为0时要回收内存
       lock.Unlock();
     }
     void release() {

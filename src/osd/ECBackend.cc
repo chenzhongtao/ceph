@@ -168,7 +168,7 @@ void ECBackend::RecoveryOp::dump(Formatter *f) const
 }
 
 ECBackend::ECBackend(
-  PGBackend::Listener *pg,
+  PGBackend::Listener *pg,//这个pg就是用来初始化PGBackend的parent成员的，是创建PG时new ReplicatedPG一路传过来的
   coll_t coll,
   coll_t temp_coll,
   ObjectStore *store,

@@ -32,7 +32,7 @@ struct librados::IoCtxImpl {
   atomic_t ref_cnt;
   RadosClient *client;
   int64_t poolid;
-  snapid_t snap_seq;
+  snapid_t snap_seq; //# image±¾ÉíµÄsnap_id 18446744073709551614
   ::SnapContext snapc;
   uint64_t assert_ver;
   map<object_t, uint64_t> assert_src_version;

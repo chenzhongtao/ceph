@@ -62,7 +62,7 @@ static __inline__ uint64_t swab64(uint64_t val)
 # define mswab64(a) swab64(a)
 # define mswab32(a) swab32(a)
 # define mswab16(a) swab16(a)
-#elif defined(CEPH_LITTLE_ENDIAN)
+#elif defined(CEPH_LITTLE_ENDIAN) //# 如果本身是小端就不用转换
 # define mswab64(a) (a)
 # define mswab32(a) (a)
 # define mswab16(a) (a)
@@ -101,7 +101,7 @@ MAKE_LE_CLASS(16)
 #define cpu_to_le32(x) (x)
 #define cpu_to_le16(x) (x)
   */
-#define le64_to_cpu(x) ((uint64_t)x)
+#define le64_to_cpu(x) ((uint64_t)x) //# 对应上面82行那个operator
 #define le32_to_cpu(x) ((__u32)x)
 #define le16_to_cpu(x) ((__u16)x)
 

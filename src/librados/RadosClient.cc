@@ -206,6 +206,7 @@ int librados::RadosClient::connect()
     goto out;
 
   err = -ENOMEM;
+  //# 产生一个近似唯一的 ID
   nonce = getpid() + (1000000 * (uint64_t)rados_instance.inc());
   messenger = Messenger::create(cct, cct->_conf->ms_type, entity_name_t::CLIENT(-1),
 				"radosclient", nonce);
@@ -217,6 +218,7 @@ int librados::RadosClient::connect()
   // how to decompose the reply data into its consituent pieces.
   messenger->set_default_policy(Messenger::Policy::lossy_client(0, CEPH_FEATURE_OSDREPLYMUX));
 
+  //log: librados: starting msgr at :/0
   ldout(cct, 1) << "starting msgr at " << messenger->get_myaddr() << dendl;
 
   ldout(cct, 1) << "starting objecter" << dendl;
@@ -247,13 +249,14 @@ int librados::RadosClient::connect()
     shutdown();
     goto out;
   }
-
+  //# 和mon在这里建立连接
   err = monclient.authenticate(conf->client_mount_timeout);
   if (err) {
     ldout(cct, 0) << conf->name << " authentication error " << cpp_strerror(-err) << dendl;
     shutdown();
     goto out;
   }
+  //# {_type = 8 '\b', _num = 6305, static TYPE_MON = 1, static TYPE_MDS = 2, static TYPE_OSD = 4, static TYPE_CLIENT = 8, static NEW = -1}
   messenger->set_myname(entity_name_t::CLIENT(monclient.get_global_id()));
 
   objecter->set_client_incarnation(0);
@@ -428,12 +431,14 @@ int librados::RadosClient::wait_for_osdmap()
 {
   assert(!lock.is_locked_by_me());
 
+  //# 如果还没建立连接返回错误  RadosClient::state
   if (state != CONNECTED) {
     return -ENOTCONN;
   }
 
   bool need_map = false;
   const OSDMap *osdmap = objecter->get_osdmap_read();
+  //# 251
   if (osdmap->get_epoch() == 0) {
     need_map = true;
   }

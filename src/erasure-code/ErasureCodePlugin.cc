@@ -95,14 +95,15 @@ int ErasureCodePluginRegistry::factory(const std::string &plugin_name,
     if (plugin == 0) {
       loading = true;
       assert(parameters.count("directory") != 0);
-      int r = load(plugin_name, parameters.find("directory")->second, &plugin, ss);
+      int r = load(plugin_name, parameters.find("directory")->second, &plugin, ss);//load插件
       loading = false;
       if (r != 0)
 	return r;
     }
   }
 
-  return plugin->factory(parameters, erasure_code);
+  return plugin->factory(parameters, erasure_code);//这里就是具体的plugin中的函数调用了，
+                                                   //ErasureCodePlugin.h中定义的factory为纯虚函数
 }
 
 static const char *an_older_version() {
@@ -116,7 +117,7 @@ int ErasureCodePluginRegistry::load(const std::string &plugin_name,
 {
   assert(lock.is_locked());
   std::string fname = directory + "/" PLUGIN_PREFIX
-    + plugin_name + PLUGIN_SUFFIX;
+    + plugin_name + PLUGIN_SUFFIX;//获取插件的路径和名称eg:/usr/lib64/ceph/erasure-code/libec_jerasure.so
   void *library = dlopen(fname.c_str(), RTLD_NOW);
   if (!library) {
     ss << "load dlopen(" << fname << "): " << dlerror();

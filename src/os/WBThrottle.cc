@@ -193,7 +193,7 @@ void WBThrottle::queue_wb(
 {
   Mutex::Locker l(lock);
   ceph::unordered_map<ghobject_t, pair<PendingWB, FDRef> >::iterator wbiter =
-    pending_wbs.find(hoid);
+    pending_wbs.find(hoid);// --------- 这个数据类型为关联类型，即key/value类型
   if (wbiter == pending_wbs.end()) {
     wbiter = pending_wbs.insert(
       make_pair(hoid,
@@ -264,10 +264,10 @@ void WBThrottle::clear_object(const ghobject_t &hoid)
 void WBThrottle::throttle()
 {
   Mutex::Locker l(lock);
-  while (!stopping && !(
+  while (!stopping && !(//等待条件并进入睡眠以等待条件变为真
 	   cur_ios < io_limits.second &&
 	   pending_wbs.size() < fd_limits.second &&
-	   cur_size < size_limits.second)) {
+	   cur_size < size_limits.second)) {//条件不成立，也就是cur_ios这些值超过limit限额时，则进入等待状态
     cond.Wait(lock);
   }
-}
+}//在这些值变小后，while条件满足了，在另外的位置queue_wb发送信号，唤醒调用throttle的线程

@@ -81,6 +81,7 @@ struct ceph_pg {
  * b <= bmask and bmask=(2**n)-1
  * e.g., b=12 -> bmask=15, b=123 -> bmask=127
  */
+ //# 计算对应的pg
 static inline int ceph_stable_mod(int x, int b, int bmask)
 {
 	if ((x & bmask) < b)
@@ -476,7 +477,7 @@ struct ceph_osd_op {
 			__le64 offset, length;
 			__le64 truncate_size;
 			__le32 truncate_seq;
-		} __attribute__ ((packed)) extent;
+		} __attribute__ ((packed)) extent;  // __attribute__ ((packed)) 的作用就是告诉编译器取消结构在编译过程中的优化对齐,按照实际占用字节数进行对
 		struct {
 			__le32 name_len;
 			__le32 value_len;

@@ -256,7 +256,7 @@ public:
   class CEPH_BUFFER_API list {
     // my private bits
     std::list<ptr> _buffers;
-    unsigned _len;
+    unsigned _len; //# bufferlist的总长度
     unsigned _memcopy_count; //the total of memcopy using rebuild().
     ptr append_buffer;  // where i put small appends.
 

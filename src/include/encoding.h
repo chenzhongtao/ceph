@@ -49,7 +49,8 @@ using namespace ceph;
 template<class T>
 inline void encode_raw(const T& t, bufferlist& bl)
 {
-  bl.append((char*)&t, sizeof(t));
+    //# buffer.cc 1524
+  bl.append((char*)&t, sizeof(t)); //# 以小端类型存在bufferlist中
 }
 template<class T>
 inline void decode_raw(T& t, bufferlist::iterator &p)
@@ -88,14 +89,14 @@ inline void decode(bool &v, bufferlist::iterator& p) {
 
 #define WRITE_INTTYPE_ENCODER(type, etype)				\
   inline void encode(type v, bufferlist& bl, uint64_t features=0) {	\
-    ceph_##etype e;					                \
+    ceph_##etype e;					                \  //# 小端类型  types.h  byteorder.h
     e = v;                                                              \
     encode_raw(e, bl);							\
   }									\
   inline void decode(type &v, bufferlist::iterator& p) {		\
     ceph_##etype e;							\
-    decode_raw(e, p);							\
-    v = e;								\
+    decode_raw(e, p);							\//# 小端类型
+    v = e;								\ //# 本机类型
   }
 
 WRITE_INTTYPE_ENCODER(uint64_t, le64)
@@ -142,7 +143,7 @@ WRITE_INTTYPE_ENCODER(int16_t, le16)
 # define ENCODE_DUMP_PRE()
 # define ENCODE_DUMP_POST(cl)
 #endif
-
+//# 类的编解码 在类定义的下面使用
 #define WRITE_CLASS_ENCODER(cl)						\
   inline void encode(const cl &c, bufferlist &bl, uint64_t features=0) { \
     ENCODE_DUMP_PRE(); c.encode(bl); ENCODE_DUMP_POST(cl); }		\

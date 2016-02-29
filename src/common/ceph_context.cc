@@ -372,6 +372,7 @@ CephContext::CephContext(uint32_t module_type_)
     _crypto_none(NULL),
     _crypto_aes(NULL)
 {
+  //³õÊ¼»¯Ëø
   ceph_spin_init(&_service_thread_lock);
   ceph_spin_init(&_associated_objs_lock);
   ceph_spin_init(&_feature_lock);

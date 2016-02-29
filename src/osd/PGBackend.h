@@ -37,7 +37,7 @@
   * 1) Handling client operations
   * 2) Handling object recovery
   * 3) Handling object access
-  * 4) Handling scrub, deep-scrub, repair
+  * 4) Handling scrub, deep-scrub(深度洗刷), repair
   */
  class PGBackend {
  protected:
@@ -206,7 +206,7 @@
 
      virtual uint64_t min_peer_features() const = 0;
 
-     virtual bool transaction_use_tbl() = 0;
+     virtual bool transaction_use_tbl() = 0;//在ReplicatedPG中实现该接口
 
      virtual void send_message_osd_cluster(
        int peer, Message *m, epoch_t from_epoch) = 0;
@@ -393,7 +393,7 @@
    /**
     * Client IO Interface
     */
-   class PGTransaction {
+   class PGTransaction {//在ReplicatedBackend中被class RPGTransaction继承
    public:
      /// Write
      virtual void touch(

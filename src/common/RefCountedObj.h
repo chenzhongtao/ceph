@@ -33,6 +33,7 @@ public:
   RefCountedObject *get() {
     int v = nref.inc();
     if (cct)
+      //log: RefCountedObject::get 0x21b6de0 0 -> 1  打印Object的引用次数的变化
       lsubdout(cct, refs, 1) << "RefCountedObject::get " << this << " "
 			     << (v - 1) << " -> " << v
 			     << dendl;

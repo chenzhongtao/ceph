@@ -289,7 +289,7 @@ private:
    * NOTE: a Pipe* with state CLOSED may still be in the map but is considered
    * invalid and can be replaced by anyone holding the msgr lock
    */
-  ceph::unordered_map<entity_addr_t, Pipe*> rank_pipe;
+  ceph::unordered_map<entity_addr_t, Pipe*> rank_pipe; //映射addresses,方便查找
   /**
    * list of pipes are in teh process of accepting
    *
@@ -297,7 +297,7 @@ private:
    */
   set<Pipe*> accepting_pipes;
   /// a set of all the Pipes we have which are somehow active
-  set<Pipe*>      pipes;
+  set<Pipe*>      pipes;  //SimpleMessenger中所有pipes的集合
   /// a list of Pipes we want to tear down
   list<Pipe*>     pipe_reap_queue;
 

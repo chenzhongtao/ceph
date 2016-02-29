@@ -208,6 +208,7 @@ private:
   void _renew_subs();
   void handle_subscribe_ack(MMonSubscribeAck* m);
 
+  //# what="monmap", start=0, flags=0
   bool _sub_want(string what, version_t start, unsigned flags) {
     if (sub_have.count(what) &&
 	sub_have[what].start == start &&

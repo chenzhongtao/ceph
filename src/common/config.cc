@@ -216,6 +216,7 @@ int md_config_t::parse_config_files(const char *conf_files,
     }
   }
   std::list<std::string> cfl;
+  // 把多个配置文件按文件名切分放在cfl中
   get_str_list(conf_files, cfl);
   return parse_config_files_impl(cfl, parse_errors, warnings);
 }
@@ -824,7 +825,16 @@ void md_config_t::_get_my_sections(std::vector <std::string> &sections) const
   sections.push_back("global");
 }
 
-// Return a list of all sections
+// add by chenzhongtao
+/**
+ * Return a list of all sections 
+ * 返回配置文件所有的section名字: 如
+ * {"global", "mon", "mon.0", "osd", "osd.0", "osd.1", "osd.2"}
+ *
+ * @param sections vector类型，用来装配置文件的所有section的名字
+ * @return
+ * 
+ */
 int md_config_t::get_all_sections(std::vector <std::string> &sections) const
 {
   Mutex::Locker l(lock);

@@ -38,7 +38,7 @@ class CephContext;
 				const ceph_file_layout *layout,
 				uint64_t offset, uint64_t len, uint64_t trunc_size,
 				vector<ObjectExtent>& extents,
-				uint64_t buffer_offset=0);
+				uint64_t buffer_offset=0);//zhangmin add file_to_extents函数实现在Striper.cc中
 
     static void file_to_extents(CephContext *cct, inodeno_t ino,
 				const ceph_file_layout *layout,
@@ -49,7 +49,7 @@ class CephContext;
       snprintf(buf, sizeof(buf), "%llx.%%08llx", (long long unsigned)ino);
 
       file_to_extents(cct, buf, layout, offset, len, trunc_size, extents);
-    }
+    }//调用上面的file_to_extents，最后一个参数有默认值
 
     static void assimilate_extents(map<object_t,vector<ObjectExtent> >& object_extents,
 				   vector<ObjectExtent>& extents);

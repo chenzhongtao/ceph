@@ -3651,7 +3651,12 @@ int OSDMonitor::crush_ruleset_create_erasure(const string &name,
       ss << "failed to load plugin using profile " << profile << std::endl;
       return err;
     }
-
+	//erasure_code为具体的ErasureCodeIsa等中的create_ruleset，具体调用过程如下:
+	//在ErasureCodePluginIsa.cc中定义的*erasure_code = ErasureCodeInterfaceRef(interface);
+	//其中interface=new ErasureCodeIsaDefault(tcache,ErasureCodeIsaDefault::kCauchy);
+	//所以此时的erasure_code为ErasureCodeInterface中的子类，父类中定义的是纯虚函数
+	//子类就为class ErasureCode : public ErasureCodeInterface
+	//class ErasureCodeIsa : public ErasureCode
     err = erasure_code->create_ruleset(name, newcrush, &ss);
     erasure_code.reset();
     if (err < 0)
@@ -3670,17 +3675,17 @@ int OSDMonitor::get_erasure_code(const string &erasure_code_profile,
   if (pending_inc.has_erasure_code_profile(erasure_code_profile))
     return -EAGAIN;
   const map<string,string> &profile =
-    osdmap.get_erasure_code_profile(erasure_code_profile);
+    osdmap.get_erasure_code_profile(erasure_code_profile);//获取对应的profile
   map<string,string>::const_iterator plugin =
-    profile.find("plugin");
-  if (plugin == profile.end()) {
+    profile.find("plugin");//获取profile中的plugin内容
+  if (plugin == profile.end()) {//没找到plugin
     ss << "cannot determine the erasure code plugin"
        << " because there is no 'plugin' entry in the erasure_code_profile "
        << profile << std::endl;
     return -EINVAL;
   }
   ErasureCodePluginRegistry &instance = ErasureCodePluginRegistry::instance();
-  return instance.factory(plugin->second, profile, erasure_code, ss);
+  return instance.factory(plugin->second, profile, erasure_code, ss);//对应的是具体插件中的factory，如ErasureCodePluginIsa.cc中的factory
 }
 
 int OSDMonitor::check_cluster_features(uint64_t features,
@@ -3805,7 +3810,7 @@ int OSDMonitor::parse_erasure_code_profile(const vector<string> &erasure_code_pr
 
   return 0;
 }
-
+//获取pool的size，如果是复制模式，则是指复制份数，如果是ec pool,则是指n+m,最小size值n
 int OSDMonitor::prepare_pool_size(const unsigned pool_type,
 				  const string &erasure_code_profile,
 				  unsigned *size, unsigned *min_size,
@@ -3849,7 +3854,7 @@ int OSDMonitor::prepare_pool_stripe_width(const unsigned pool_type,
     {
       ErasureCodeInterfaceRef erasure_code;
       err = get_erasure_code(erasure_code_profile, &erasure_code, ss);
-      uint32_t desired_stripe_width = g_conf->osd_pool_erasure_code_stripe_width;
+      uint32_t desired_stripe_width = g_conf->osd_pool_erasure_code_stripe_width;//默认4096 bytes
       if (err == 0)
 	*stripe_width = erasure_code->get_data_chunk_count() *
 	  erasure_code->get_chunk_size(desired_stripe_width);
@@ -3870,50 +3875,57 @@ int OSDMonitor::prepare_pool_crush_ruleset(const unsigned pool_type,
 					   int *crush_ruleset,
 					   stringstream &ss)
 {
-  if (*crush_ruleset < 0) {
-    switch (pool_type) {
-    case pg_pool_t::TYPE_REPLICATED:
-      {
-	if (ruleset_name == "") {
-	  //Use default ruleset
-	  *crush_ruleset = osdmap.crush->get_osd_pool_default_crush_replicated_ruleset(g_ceph_context);
-	  if (*crush_ruleset < 0) {
-	    // Errors may happen e.g. if no valid ruleset is available
-	    ss << "No suitable CRUSH ruleset exists";
-	    return *crush_ruleset;
-	  }
-	} else {
-	  return get_crush_ruleset(ruleset_name, crush_ruleset, ss);
-	}
-      }
-      break;
-    case pg_pool_t::TYPE_ERASURE:
-      {
-	int err = crush_ruleset_create_erasure(ruleset_name,
-					       erasure_code_profile,
-					       crush_ruleset, ss);
-	switch (err) {
-	case -EALREADY:
-	  dout(20) << "prepare_pool_crush_ruleset: ruleset "
-		   << ruleset_name << " try again" << dendl;
-	case 0:
-	  // need to wait for the crush rule to be proposed before proceeding
-	  err = -EAGAIN;
-	  break;
-	case -EEXIST:
-	  err = 0;
-	  break;
- 	}
-	return err;
-      }
-      break;
-    default:
-      ss << "prepare_pool_crush_ruleset: " << pool_type
-	 << " is not a known pool type";
-      return -EINVAL;
-      break;
-    }
-  } else {
+  if (*crush_ruleset < 0) 
+  {
+    switch (pool_type) 
+	{
+    	case pg_pool_t::TYPE_REPLICATED:
+      	{
+			if (ruleset_name == "") 
+			{
+	  			//Use default ruleset
+	  			*crush_ruleset = osdmap.crush->get_osd_pool_default_crush_replicated_ruleset(g_ceph_context);
+	  			if (*crush_ruleset < 0) 
+				{
+	    			// Errors may happen e.g. if no valid ruleset is available
+	    			ss << "No suitable CRUSH ruleset exists";
+	    			return *crush_ruleset;
+	  			}
+			} 
+			else 
+			{
+	  			return get_crush_ruleset(ruleset_name, crush_ruleset, ss);
+			}
+      	}
+      	break;
+    	case pg_pool_t::TYPE_ERASURE:
+		{
+			int err = crush_ruleset_create_erasure(ruleset_name,
+							       erasure_code_profile,
+							       crush_ruleset, ss);
+			switch (err) 
+			{
+				case -EALREADY:
+				  dout(20) << "prepare_pool_crush_ruleset: ruleset "
+					   << ruleset_name << " try again" << dendl;
+				case 0:
+				  // need to wait for the crush rule to be proposed before proceeding
+				  err = -EAGAIN;
+				  break;
+				case -EEXIST:
+				  err = 0;
+				  break;
+		 	}
+			return err;
+		 }
+         break;
+         default:
+        ss << "prepare_pool_crush_ruleset: " << pool_type
+	        << " is not a known pool type";
+         return -EINVAL;
+          break;
+       }
+    } else {
     if (!osdmap.crush->ruleset_exists(*crush_ruleset)) {
       ss << "CRUSH ruleset " << *crush_ruleset << " not found";
       return -ENOENT;
@@ -3978,11 +3990,11 @@ int OSDMonitor::prepare_new_pool(string& name, uint64_t auid,
     return -EINVAL;
   int r;
   r = prepare_pool_crush_ruleset(pool_type, erasure_code_profile,
-				 crush_ruleset_name, &crush_ruleset, ss);
+				 crush_ruleset_name, &crush_ruleset, ss);//prepare crush ruleset
   if (r)
     return r;
   unsigned size, min_size;
-  r = prepare_pool_size(pool_type, erasure_code_profile, &size, &min_size, ss);
+  r = prepare_pool_size(pool_type, erasure_code_profile, &size, &min_size, ss);//复制份数或者n+m
   if (r)
     return r;
   uint32_t stripe_width = 0;
@@ -6676,7 +6688,7 @@ bool OSDMonitor::preprocess_pool_op_create(MPoolOp *m)
   }
 
   int64_t pool = osdmap.lookup_pg_pool_name(m->name.c_str());
-  if (pool >= 0) {
+  if (pool >= 0) {//找到了这个name的pg，不是应该不能创建该pg么?
     _pool_op_reply(m, 0, osdmap.get_epoch());
     return true;
   }

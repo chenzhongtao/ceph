@@ -71,6 +71,7 @@ namespace librbd {
     memset(&header, 0, sizeof(header));
     memset(&layout, 0, sizeof(layout));
 
+    //# pname = librbd--ecpool-2/volume-1
     string pname = string("librbd-") + id + string("-") +
       data_ctx.get_pool_name() + string("/") + name;
     if (snap) {
@@ -87,7 +88,7 @@ namespace librbd {
 
       uint64_t init_max_dirty = cct->_conf->rbd_cache_max_dirty;
       if (cct->_conf->rbd_cache_writethrough_until_flush)
-	init_max_dirty = 0;
+	        init_max_dirty = 0;
       ldout(cct, 20) << "Initial cache settings:"
 		     << " size=" << cct->_conf->rbd_cache_size
 		     << " num_objects=" << 10
@@ -149,34 +150,36 @@ namespace librbd {
     }
 
     if (!old_format) {
-      if (!id.length()) {
-	r = cls_client::get_id(&md_ctx, id_obj_name(name), &id);
-	if (r < 0) {
-	  lderr(cct) << "error reading image id: " << cpp_strerror(r)
-		     << dendl;
-	  return r;
-	}
-      }
+          if (!id.length()) {
+    	r = cls_client::get_id(&md_ctx, id_obj_name(name), &id);
+    	if (r < 0) {
+    	  lderr(cct) << "error reading image id: " << cpp_strerror(r)
+    		     << dendl;
+    	  return r;
+    	}
+          }
 
-      header_oid = header_name(id);
-      r = cls_client::get_immutable_metadata(&md_ctx, header_oid,
-					     &object_prefix, &order);
-      if (r < 0) {
-	lderr(cct) << "error reading immutable metadata: "
-		   << cpp_strerror(r) << dendl;
-	return r;
-      }
+          header_oid = header_name(id);
+          r = cls_client::get_immutable_metadata(&md_ctx, header_oid,
+    					     &object_prefix, &order);
+          if (r < 0) {
+    	lderr(cct) << "error reading immutable metadata: "
+    		   << cpp_strerror(r) << dendl;
+    	return r;
+          }
 
-      r = cls_client::get_stripe_unit_count(&md_ctx, header_oid,
-					    &stripe_unit, &stripe_count);
-      if (r < 0 && r != -ENOEXEC && r != -EINVAL) {
-	lderr(cct) << "error reading striping metadata: "
-		   << cpp_strerror(r) << dendl;
-	return r;
-      }
+          r = cls_client::get_stripe_unit_count(&md_ctx, header_oid,
+    					    &stripe_unit, &stripe_count);
+          if (r < 0 && r != -ENOEXEC && r != -EINVAL) {
+    	lderr(cct) << "error reading striping metadata: "
+    		   << cpp_strerror(r) << dendl;
+    	return r;
+          }
 
-      init_layout();
-    } else {
+          init_layout();
+    } 
+    else {
+      //# "volume-1.rbd"
       header_oid = old_header_name(name);
     }
 
@@ -746,14 +749,17 @@ namespace librbd {
     return parent_len;
   }
 
+  //获取覆盖 parent 内容的大小
   uint64_t ImageCtx::prune_parent_extents(vector<pair<uint64_t,uint64_t> >& objectx,
 					  uint64_t overlap)
   {
     // drop extents completely beyond the overlap
+    // 如果要写的数据off大于overlap，对parent没影响，出列
     while (!objectx.empty() && objectx.back().first >= overlap)
       objectx.pop_back();
 
     // trim final overlapping extent
+    // overlap刚好在中间，去掉后面超出部分
     if (!objectx.empty() && objectx.back().first + objectx.back().second > overlap)
       objectx.back().second = overlap - objectx.back().first;
 
@@ -762,6 +768,7 @@ namespace librbd {
 	 p != objectx.end();
 	 ++p)
       len += p->second;
+    //log: prune_parent_extents image overlap 0, object overlap 0 from image extents []
     ldout(cct, 10) << "prune_parent_extents image overlap " << overlap
 		   << ", object overlap " << len
 		   << " from image extents " << objectx << dendl;

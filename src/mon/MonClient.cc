@@ -89,6 +89,7 @@ MonClient::~MonClient()
 int MonClient::build_initial_monmap()
 {
   ldout(cct, 10) << "build_initial_monmap" << dendl;
+  //# 解析配置文件中所有mon节点的地址 放到 MonMap::mon_addr 中
   return monmap.build_initial(cct, cerr);
 }
 
@@ -348,7 +349,7 @@ int MonClient::init()
   ldout(cct, 10) << "init" << dendl;
 
   messenger->add_dispatcher_head(this);
-
+  //# {type = 8, id = "admin", type_id = "client.admin"}
   entity_name = cct->_conf->name;
 
   Mutex::Locker l(monc_lock);
@@ -361,8 +362,10 @@ int MonClient::init()
              entity_name.get_type() == CEPH_ENTITY_TYPE_MON)
       method = cct->_conf->auth_cluster_required;
     else
+        //# "none"
       method = cct->_conf->auth_client_required;
   auth_supported = new AuthMethodList(cct, method);
+  //# log: monclient(hunting): auth_supported 1 method none
   ldout(cct, 10) << "auth_supported " << auth_supported->get_supported_set() << " method " << method << dendl;
 
   int r = 0;
@@ -593,18 +596,22 @@ void MonClient::_reopen_session(int rank, string name)
   ldout(cct, 10) << "_reopen_session rank " << rank << " name " << name << dendl;
 
   if (rank < 0 && name.length() == 0) {
+    //# 随机挑选一个mon
     cur_mon = _pick_random_mon();
   } else if (name.length()) {
     cur_mon = name;
   } else {
     cur_mon = monmap.get_name(rank);
   }
-
+  //# 0x0
   if (cur_con) {
     cur_con->mark_down();
   }
+
+  //# 跟mon建立连接  SimpleMessenger.cc:397
   cur_con = messenger->get_connection(monmap.get_inst(cur_mon));
-	
+
+   //# log: picked mon.0 con 0x1a7a3b0 addr 191.168.45.74:6789/0
   ldout(cct, 10) << "picked mon." << cur_mon << " con " << cur_con
 		 << " addr " << cur_con->get_peer_addr()
 		 << dendl;
@@ -755,6 +762,13 @@ void MonClient::_renew_subs()
       sub_renew_sent = ceph_clock_now(cct);
 
     MMonSubscribe *m = new MMonSubscribe;
+    /*#
+    print sub_have
+    $4 = std::map with 2 elements = {
+      ["monmap"] = {start = {v = 2}, flags = 0 '\000'},
+      ["osdmap"] = {start = {v = 0}, flags = 1 '\001'}
+}
+    */
     m->what = sub_have;
     _send_mon_message(m);
   }

@@ -143,8 +143,9 @@ private:
 
   // ObjectMap
   boost::scoped_ptr<ObjectMap> object_map;
-  
-  Finisher ondisk_finisher;
+
+  //zhangmin add 一个类拥有一个Finisher成员时，意味着它同时获得了一个队列和一个执行线程
+  Finisher ondisk_finisher; ////处理写磁盘对应的回调
 
   // helper fns
   int get_cdir(coll_t cid, char *s, int len);
@@ -178,7 +179,7 @@ private:
   // -- op workqueue --
   struct Op {
     utime_t start;
-    uint64_t op;
+    uint64_t op;//op_seq
     list<Transaction*> tls;
     Context *onreadable, *onreadable_sync;
     uint64_t ops, bytes;
@@ -189,7 +190,7 @@ private:
     list<Op*> q;
     list<uint64_t> jq;
     list<pair<uint64_t, Context*> > flush_commit_waiters;
-    Cond cond;
+    Cond cond; //zhangmin add 紧跟着类名的类成员访问权限默认为private
   public:
     Sequencer *parent;
     Mutex apply_lock;  // for apply mutual exclusion
@@ -239,18 +240,18 @@ private:
 	     flush_commit_waiters.begin();
 	   i != flush_commit_waiters.end() && i->first < seq;
 	   flush_commit_waiters.erase(i++)) {
-	to_queue->push_back(i->second);
+	to_queue->push_back(i->second);//这里是入队列
       }
     }
 
     void queue_journal(uint64_t s) {
       Mutex::Locker l(qlock);
-      jq.push_back(s);
+      jq.push_back(s);//向尾部插入元素s
     }
     void dequeue_journal(list<Context*> *to_queue) {
       Mutex::Locker l(qlock);
-      jq.pop_front();
-      cond.Signal();
+      jq.pop_front();//删除容器头部的元素
+      cond.Signal();//发送一个信号，唤醒flush()所在的线程
       _wake_flush_waiters(to_queue);
     }
     void queue(Op *o) {
@@ -259,10 +260,10 @@ private:
     }
     Op *peek_queue() {
       assert(apply_lock.is_locked());
-      return q.front();
+      return q.front();//取出第一个item
     }
 
-    Op *dequeue(list<Context*> *to_queue) {
+    Op *dequeue(list<Context*> *to_queue) {//_finish_op调用
       assert(to_queue);
       assert(apply_lock.is_locked());
       Mutex::Locker l(qlock);
@@ -330,16 +331,18 @@ private:
   uint64_t op_queue_len, op_queue_bytes;
   Cond op_throttle_cond;
   Mutex op_throttle_lock;
-  Finisher op_finisher;
+  
+  //zhangmin add 一个类拥有一个Finisher成员时，意味着它同时获得了一个队列和一个执行线程
+  Finisher op_finisher;  //处理各操作对应的回调
 
-  ThreadPool op_tp;
+  ThreadPool op_tp;//线程的入口函数为ThreadPool::worker
   struct OpWQ : public ThreadPool::WorkQueue<OpSequencer> {
     FileStore *store;
     OpWQ(FileStore *fs, time_t timeout, time_t suicide_timeout, ThreadPool *tp)
       : ThreadPool::WorkQueue<OpSequencer>("FileStore::OpWQ", timeout, suicide_timeout, tp), store(fs) {}
 
     bool _enqueue(OpSequencer *osr) {
-      store->op_queue.push_back(osr);
+      store->op_queue.push_back(osr);//这里是入队列
       return true;
     }
     void _dequeue(OpSequencer *o) {
@@ -356,15 +359,15 @@ private:
       return osr;
     }
     void _process(OpSequencer *osr, ThreadPool::TPHandle &handle) {
-      store->_do_op(osr, handle);
+      store->_do_op(osr, handle);  //zhangmin add 重新实现父类WorkQueue中的虚函数_process
     }
     void _process_finish(OpSequencer *osr) {
-      store->_finish_op(osr);
+      store->_finish_op(osr);  //zhangmin add 重新实现父类WorkQueue中的虚函数_process_finish
     }
     void _clear() {
       assert(store->op_queue.empty());
     }
-  } op_wq;
+  } op_wq;//消息队列
 
   void _do_op(OpSequencer *o, ThreadPool::TPHandle &handle);
   void _finish_op(OpSequencer *o);
@@ -398,10 +401,10 @@ public:
   int lfn_unlink(coll_t cid, const ghobject_t& o, const SequencerPosition &spos,
 		 bool force_clear_omap=false);
 
-public:
+public://zhangmin add base表示data路径，jdev表示journal路径
   FileStore(const std::string &base, const std::string &jdev,
     osflagbits_t flags = 0,
-    const char *internal_name = "filestore", bool update_to=false);
+    const char *internal_name = "filestore", bool update_to=false);//zhangmin add 函数定义位于FileStore.cc中
   ~FileStore();
 
   int _detect_fs();
@@ -738,7 +741,7 @@ ostream& operator<<(ostream& out, const FileStore::OpSequencer& s);
 
 struct fiemap;
 
-class FileStoreBackend {
+class FileStoreBackend {//定义实际存储数据的结构的父类，子类有XFS,BTRFS,ZFS
 private:
   FileStore *filestore;
 protected:

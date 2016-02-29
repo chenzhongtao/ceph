@@ -360,7 +360,7 @@ public:
     if (d->ms_can_fast_dispatch_any())
       fast_dispatchers.push_back(d);
     if (first)
-      ready();
+      ready(); //SimpleMessenger.ready()
   }
   /**
    * Bind the Messenger to a specific address. If bind_addr
@@ -564,7 +564,9 @@ public:
     for (list<Dispatcher*>::iterator p = dispatchers.begin();
 	 p != dispatchers.end();
 	 ++p) {
-      if ((*p)->ms_dispatch(m))
+        //# RadosClient 和 Objecter 、MonClient等，只有一个会处理，处理后返回true,就直接返回了
+      if ((*p)->ms_dispatch(m)) //重点在这里，osd走osd的ms_dispatch,monitor走monitor的ms_dispatch
+
 	return;
     }
     lsubdout(cct, ms, 0) << "ms_deliver_dispatch: unhandled message " << m << " " << *m << " from "

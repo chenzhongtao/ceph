@@ -100,6 +100,7 @@ static void set_op_flags(::ObjectOperation *o, int flags)
     rados_flags |= CEPH_OSD_OP_FLAG_FADVISE_DONTNEED;
   if (flags & LIBRADOS_OP_FLAG_FADVISE_NOCACHE)
     rados_flags |= CEPH_OSD_OP_FLAG_FADVISE_NOCACHE;
+  // Objecter.h
   o->set_last_op_flags(rados_flags);
 }
 
@@ -113,6 +114,7 @@ void librados::ObjectOperation::set_op_flags(ObjectOperationFlags flags)
 void librados::ObjectOperation::set_op_flags2(int flags)
 {
   ::ObjectOperation *o = (::ObjectOperation *)impl;
+  // librados.cc 86
   ::set_op_flags(o, flags);
 }
 
@@ -205,6 +207,7 @@ void librados::ObjectReadOperation::stat(uint64_t *psize, time_t *pmtime, int *p
 void librados::ObjectReadOperation::read(size_t off, uint64_t len, bufferlist *pbl, int *prval)
 {
   ::ObjectOperation *o = (::ObjectOperation *)impl;
+  //#ObjectOperation::read Objecter.h:282 
   o->read(off, len, pbl, prval, NULL);
 }
 
@@ -213,6 +216,7 @@ void librados::ObjectReadOperation::sparse_read(uint64_t off, uint64_t len,
 						bufferlist *data_bl, int *prval)
 {
   ::ObjectOperation *o = (::ObjectOperation *)impl;
+  //#ObjectOperation::sparse_read Objecter.h:315 
   o->sparse_read(off, len, m, data_bl, prval);
 }
 
@@ -344,6 +348,7 @@ void librados::ObjectWriteOperation::write(uint64_t off, const bufferlist& bl)
 {
   ::ObjectOperation *o = (::ObjectOperation *)impl;
   bufferlist c = bl;
+  // Objecter.h: 332
   o->write(off, c);
 }
 
@@ -491,6 +496,7 @@ void librados::ObjectWriteOperation::set_alloc_hint(
                                             uint64_t expected_write_size)
 {
   ::ObjectOperation *o = (::ObjectOperation *)impl;
+  // 全局的ObjectOperation 在 Objecter.h:1012
   o->set_alloc_hint(expected_object_size, expected_write_size);
 }
 
@@ -1144,6 +1150,7 @@ int librados::IoCtx::rmxattr(const std::string& oid, const char *name)
   return io_ctx_impl->rmxattr(obj, name);
 }
 
+//# oid="volume-1.rbd", psize=0x0, pmtime=0x0
 int librados::IoCtx::stat(const std::string& oid, uint64_t *psize, time_t *pmtime)
 {
   object_t obj(oid);
@@ -1332,6 +1339,7 @@ int librados::IoCtx::aio_operate(const std::string& oid, AioCompletion *c,
   for (size_t i = 0; i < snaps.size(); ++i)
     snv[i] = snaps[i];
   SnapContext snapc(snap_seq, snv);
+  //AioCompletion *c   ->  AioCompletionImpl *pc;
   return io_ctx_impl->aio_operate(obj, (::ObjectOperation*)o->impl, c->pc,
 				  snapc, 0);
 }
@@ -1369,6 +1377,7 @@ int librados::IoCtx::aio_operate(const std::string& oid, AioCompletion *c,
 				 int flags, bufferlist *pbl)
 {
   object_t obj(oid);
+  //# IoCtxImpl.cc:574
   return io_ctx_impl->aio_operate_read(obj, (::ObjectOperation*)o->impl, c->pc,
 				       translate_flags(flags), pbl);
 }

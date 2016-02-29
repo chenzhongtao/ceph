@@ -985,6 +985,7 @@ public:
 
   int find_rule(int ruleset, int type, int size) const {
     if (!crush) return -1;
+    // mapper.c:55
     return crush_find_rule(crush, ruleset, type, size);
   }
 
@@ -1016,12 +1017,13 @@ public:
 
     return result;
   }
-
+  //# maxout =1 (size) 复制的份数 命令行: ceph osd pool set {poolname} size {num-replicas}
   void do_rule(int rule, int x, vector<int>& out, int maxout,
 	       const vector<__u32>& weight) const {
     Mutex::Locker l(mapper_lock);
     int rawout[maxout];
     int scratch[maxout * 3];
+    // 复制的份数
     int numrep = crush_do_rule(crush, rule, x, rawout, maxout, &weight[0], weight.size(), scratch);
     if (numrep < 0)
       numrep = 0;

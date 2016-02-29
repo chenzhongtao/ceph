@@ -39,7 +39,7 @@ enum {
 };
 
 /**
- * WBThrottle
+ * WBThrottle -- 中文翻译  writeback 回写节流
  *
  * Tracks, throttles, and flushes outstanding IO
  */

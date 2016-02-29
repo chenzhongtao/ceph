@@ -737,7 +737,8 @@ int Monitor::init()
   new_tick();
 
   // i'm ready!
-  messenger->add_dispatcher_tail(this);
+  messenger->add_dispatcher_tail(this);//将monitor自身加入到messenger的dispatcher链表中
+  //在messenger中的ms_deliver_dispatch中会各自的消息放入到各自的dispatcher队列中
 
   bootstrap();
 
@@ -3283,7 +3284,7 @@ void Monitor::waitlist_or_zap_client(Message *m)
   }
 }
 
-void Monitor::_ms_dispatch(Message *m)
+void Monitor::_ms_dispatch(Message *m)//dispatcher过来的消息，处理函数
 {
   if (is_shutdown()) {
     m->put();
@@ -3300,7 +3301,7 @@ void Monitor::_ms_dispatch(Message *m)
   // is going on.
   assert(connection);
 
-  src_is_mon = (connection->get_peer_type() & CEPH_ENTITY_TYPE_MON);
+  src_is_mon = (connection->get_peer_type() & CEPH_ENTITY_TYPE_MON);//判断发消息过来的是否是monitor
 
   bool reuse_caps = false;
   dout(20) << "have connection" << dendl;
@@ -3373,7 +3374,7 @@ void Monitor::_ms_dispatch(Message *m)
     return;
   }
 
-  dispatch(s, m, src_is_mon);
+  dispatch(s, m, src_is_mon);///dispatch中主要是根据不同的消息类型来处理
 
   if (s) {
     s->put();

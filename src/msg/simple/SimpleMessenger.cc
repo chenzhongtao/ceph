@@ -97,7 +97,6 @@ int SimpleMessenger::_send_message(Message *m, const entity_inst_t& dest)
   m->get_header().src = get_myname();
 
   if (!m->get_priority()) m->set_priority(get_default_send_priority());
- 
   ldout(cct,1) <<"--> " << dest.name << " "
           << dest.addr << " -- " << *m
     	  << " -- ?+" << m->get_data().length()
@@ -122,10 +121,12 @@ int SimpleMessenger::_send_message(Message *m, const entity_inst_t& dest)
 int SimpleMessenger::_send_message(Message *m, Connection *con)
 {
   //set envelope
+  //# {type = 8 '\b', num = {v = 6013}}
   m->get_header().src = get_myname();
 
-  if (!m->get_priority()) m->set_priority(get_default_send_priority());
-
+  if (!m->get_priority()) 
+      m->set_priority(get_default_send_priority());
+  //# log:-- 191.168.45.104:0/1018641 --> 191.168.45.104:6805/22585 -- osd_op(client.5904.0:6 rb.0.1011.6b8b4567.000000000000 [set-alloc-hint object_size 4194304 write_size 4194304,write 0~4194304] 1.6c591a2b ack+ondisk+write+known_if_redirected e209) v5 -- ?+0 0x1ff9ff0 con 0x1ff2c50
   ldout(cct,1) << "--> " << con->get_peer_addr()
       << " -- " << *m
       << " -- ?+" << m->get_data().length()
@@ -369,7 +370,9 @@ Pipe *SimpleMessenger::connect_rank(const entity_addr_t& addr,
   if (first)
     pipe->_send(first);
   pipe->pipe_lock.Unlock();
+  //# 把pipe插入到SimpleMessenger  ceph::unordered_map<entity_addr_t, Pipe*> rank_pipe
   pipe->register_pipe();
+  //# 把pipe插入到SimpleMessenger  set<Pipe*>      pipes
   pipes.insert(pipe);
 
   return pipe;
@@ -440,6 +443,7 @@ void SimpleMessenger::submit_message(Message *m, PipeConnection *con,
   // existing connection?
   if (con) {
     Pipe *pipe = NULL;
+    //# PipeConnection::try_get_pipe PipeConnection.cc:38
     bool ok = static_cast<PipeConnection*>(con)->try_get_pipe(&pipe);
     if (!ok) {
       ldout(cct,0) << "submit_message " << *m << " remote, " << dest_addr
@@ -451,7 +455,8 @@ void SimpleMessenger::submit_message(Message *m, PipeConnection *con,
       // we loop in case of a racing reconnect, either from us or them
       pipe->pipe_lock.Lock(); // can't use a Locker because of the Pipe ref
       if (pipe->state != Pipe::STATE_CLOSED) {
-	ldout(cct,20) << "submit_message " << *m << " remote, " << dest_addr << ", have pipe." << dendl;
+    //#log: submit_message osd_op(client.5904.0:6 rb.0.1011.6b8b4567.000000000000 [set-alloc-hint object_size 4194304 write_size 4194304,write 0~4194304] 1.6c591a2b ack+ondisk+write+known_if_redirected e209) v5 remote, 191.168.45.104:6805/22585, have pipe.
+    ldout(cct,20) << "submit_message " << *m << " remote, " << dest_addr << ", have pipe." << dendl;
 	pipe->_send(m);
 	pipe->pipe_lock.Unlock();
 	pipe->put();
@@ -706,8 +711,10 @@ void SimpleMessenger::learned_addr(const entity_addr_t &peer_addr_for_me)
   lock.Unlock();
 }
 
+//# 初始化本地连接
 void SimpleMessenger::init_local_connection()
 {
+  // 设置对端的地址和类型 等于 自己
   local_connection->peer_addr = my_inst.addr;
   local_connection->peer_type = my_inst.name.type();
   ms_deliver_handle_fast_connect(local_connection.get());

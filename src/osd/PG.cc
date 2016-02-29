@@ -213,7 +213,7 @@ PG::PG(OSDService *o, OSDMapRef curmap,
   finish_sync_event(NULL),
   scrub_after_recovery(false),
   active_pushes(0),
-  recovery_state(this),
+  recovery_state(this),//定义位于1422行
   pg_id(p),
   peer_features((uint64_t)-1)
 {
@@ -1448,7 +1448,7 @@ struct C_PG_ActivateCommitted : public Context {
   }
 };
 
-void PG::activate(ObjectStore::Transaction& t,
+void PG::activate(ObjectStore::Transaction& t, //这个事物是怎么执行的???
 		  epoch_t activation_epoch,
 		  list<Context*>& tfin,
 		  map<int, map<spg_t,pg_query_t> >& query_map,
@@ -1516,7 +1516,7 @@ void PG::activate(ObjectStore::Transaction& t,
   dirty_big_info = true; // maybe
 
   // find out when we commit
-  t.register_on_complete(
+  t.register_on_complete(//准备事务的回调准备工作，申请注册C_PG_ActivateCommitted
     new C_PG_ActivateCommitted(
       this,
       get_osdmap()->get_epoch(),
@@ -1555,7 +1555,7 @@ void PG::activate(ObjectStore::Transaction& t,
     for (set<pg_shard_t>::iterator i = actingbackfill.begin();
 	 i != actingbackfill.end();
 	 ++i) {
-      if (*i == pg_whoami) continue;
+      if (*i == pg_whoami) continue;//自身节点跳过
       pg_shard_t peer = *i;
       assert(peer_info.count(peer));
       pg_info_t& pi = peer_info[peer];
@@ -1612,7 +1612,7 @@ void PG::activate(ObjectStore::Transaction& t,
 	// initialize peer with our purged_snaps.
 	pi.purged_snaps = info.purged_snaps;
 
-	m = new MOSDPGLog(
+	m = new MOSDPGLog(//将权威的log封装成MOSDPGLog,发送给副本，然后提交事务
 	  i->shard, pg_whoami.shard,
 	  get_osdmap()->get_epoch(), pi);
 
@@ -1840,19 +1840,19 @@ void PG::_activate_committed(epoch_t epoch, epoch_t activation_epoch)
   if (pg_has_reset_since(epoch)) {
     dout(10) << "_activate_committed " << epoch
 	     << ", that was an old interval" << dendl;
-  } else if (is_primary()) {
+  } else if (is_primary()) {//如果这时判断本osd是主osd
     peer_activated.insert(pg_whoami);
     dout(10) << "_activate_committed " << epoch
 	     << " peer_activated now " << peer_activated 
 	     << " last_epoch_started " << info.history.last_epoch_started
 	     << " same_interval_since " << info.history.same_interval_since << dendl;
     assert(!actingbackfill.empty());
-    if (peer_activated.size() == actingbackfill.size())
-      all_activated_and_committed();
+    if (peer_activated.size() == actingbackfill.size())//主OSD判断是不是所有的副本osd都返回了提交了结果
+      all_activated_and_committed();//所有的replica都提交了结果，则进行all_activated_and_committed()处理
   } else {
     dout(10) << "_activate_committed " << epoch << " telling primary" << dendl;
-    MOSDPGInfo *m = new MOSDPGInfo(epoch);
-    pg_notify_t i = pg_notify_t(
+    MOSDPGInfo *m = new MOSDPGInfo(epoch);//replica osd这时就要告诉primary osd已经处理好，发送消息MOSDPGInfo
+    pg_notify_t i = pg_notify_t(//当primary osd接收到MOSDPGInfo消息，解析为MInfoRec事件
       get_primary().shard, pg_whoami.shard,
       get_osdmap()->get_epoch(),
       get_osdmap()->get_epoch(),
@@ -3932,7 +3932,7 @@ void PG::chunky_scrub(ThreadPool::TPHandle &handle)
 	}
 
 	if (peer_features & CEPH_FEATURE_OSD_OBJECT_DIGEST)
-	  scrubber.seed = -1; // better, and enables oi digest checks
+	  scrubber.seed = -1; // better, and enables oi digest checks 摘要检查
 	else
 	  scrubber.seed = 0;  // compat
 
@@ -4456,7 +4456,7 @@ void PG::fulfill_log(
   assert(from == primary);
   assert(query.type != pg_query_t::INFO);
 
-  MOSDPGLog *mlog = new MOSDPGLog(
+  MOSDPGLog *mlog = new MOSDPGLog(//构造发回给primary的消息
     from.shard, pg_whoami.shard,
     get_osdmap()->get_epoch(),
     info, query_epoch);
@@ -4485,7 +4485,7 @@ void PG::fulfill_log(
     from.osd, get_osdmap()->get_epoch());
   if (con) {
     osd->share_map_peer(from.osd, con.get(), get_osdmap());
-    osd->send_message_osd_cluster(mlog, con.get());
+    osd->send_message_osd_cluster(mlog, con.get());//构造消息MOSDPGLog发还给primary osd
   } else {
     mlog->put();
   }
@@ -4651,8 +4651,8 @@ void PG::reset_interval_flush()
   dout(10) << "Clearing blocked outgoing recovery messages" << dendl;
   recovery_state.clear_blocked_outgoing();
   
-  if (!osr->flush_commit(
-      new QueuePeeringEvt<IntervalFlush>(
+  if (!osr->flush_commit(//这里调用的flush_commit在ObjectStore::Sequencer中定义的flush_commit，进一步调用
+      new QueuePeeringEvt<IntervalFlush>(//OpSequencer : public Sequencer_impl中实现的flush_commit
 	this, get_osdmap()->get_epoch(), IntervalFlush()))) {
     dout(10) << "Beginning to block outgoing recovery messages" << dendl;
     recovery_state.begin_block_outgoing();
@@ -5206,7 +5206,7 @@ void PG::queue_peering_event(CephPeeringEvtRef evt)
 {
   if (old_peering_evt(evt))
     return;
-  peering_queue.push_back(evt);
+  peering_queue.push_back(evt);//这个peering_queue和struct PeeringWQ中定义的peering_queue作用不同
   osd->queue_for_peering(this);
 }
 
@@ -5285,11 +5285,11 @@ void PG::handle_loaded(RecoveryCtx *rctx)
   recovery_state.handle_event(evt, rctx);
 }
 
-void PG::handle_create(RecoveryCtx *rctx)
+void PG::handle_create(RecoveryCtx *rctx)//创建PG之后，就要对PG的发送一系列的事件了
 {
   dout(10) << "handle_create" << dendl;
-  Initialize evt;
-  recovery_state.handle_event(evt, rctx);
+  Initialize evt;//创建事件,申请一个 Initialize的事件evt
+  recovery_state.handle_event(evt, rctx);//本端的recoverystate处理该事件
   ActMap evt2;
   recovery_state.handle_event(evt2, rctx);
 }
@@ -5342,7 +5342,7 @@ boost::statechart::result PG::RecoveryState::Initial::react(const Load& l)
   // do we tell someone we're here?
   pg->send_notify = (!pg->is_primary());
 
-  return transit< Reset >();
+  return transit< Reset >();//由Initial状态转为Reset状态
 }
 
 boost::statechart::result PG::RecoveryState::Initial::react(const MNotifyRec& notify)
@@ -5513,7 +5513,7 @@ boost::statechart::result PG::RecoveryState::Reset::react(const ActMap&)
   pg->update_heartbeat_peers();
   pg->take_waiters();
 
-  return transit< Started >();
+  return transit< Started >();//最后将状态转化为了Started
 }
 
 boost::statechart::result PG::RecoveryState::Reset::react(const QueryState& q)
@@ -5534,17 +5534,17 @@ void PG::RecoveryState::Reset::exit()
 }
 
 /*-------Start---------*/
-PG::RecoveryState::Start::Start(my_context ctx)
+PG::RecoveryState::Start::Start(my_context ctx)//开始处理进入start状态后的处理
   : my_base(ctx),
     NamedState(context< RecoveryMachine >().pg->cct, "Start")
 {
   context< RecoveryMachine >().log_enter(state_name);
 
-  PG *pg = context< RecoveryMachine >().pg;
-  if (pg->is_primary()) {
+  PG *pg = context< RecoveryMachine >().pg;//找到对应处理的PG
+  if (pg->is_primary()) {//如果当前的osd在本pg里是primary,向当前状态发送事件MakePrimary()事件
     dout(1) << "transitioning to Primary" << dendl;
     post_event(MakePrimary());
-  } else { //is_stray
+  } else { //is_stray//如果当前的osd在本pg里是replica,向当前状态发送事件MakeStray -- stray--不固定的
     dout(1) << "transitioning to Stray" << dendl; 
     post_event(MakeStray());
   }
@@ -6104,7 +6104,7 @@ PG::RecoveryState::WaitRemoteRecoveryReserved::WaitRemoteRecoveryReserved(my_con
     remote_recovery_reservation_it(context< Active >().remote_shards_to_reserve_recovery.begin())
 {
   context< RecoveryMachine >().log_enter(state_name);
-  post_event(RemoteRecoveryReserved());
+  post_event(RemoteRecoveryReserved());//发送RemoteRecoveryReserved事件，进入下面的函数处理
 }
 
 boost::statechart::result
@@ -6132,7 +6132,7 @@ PG::RecoveryState::WaitRemoteRecoveryReserved::react(const RemoteRecoveryReserve
     }
     ++remote_recovery_reservation_it;
   } else {
-    post_event(AllRemotesReserved());
+    post_event(AllRemotesReserved());//发送事件AllRemotesReserved
   }
   return discard_event();
 }
@@ -6153,9 +6153,9 @@ PG::RecoveryState::Recovering::Recovering(my_context ctx)
 
   PG *pg = context< RecoveryMachine >().pg;
   pg->state_clear(PG_STATE_RECOVERY_WAIT);
-  pg->state_set(PG_STATE_RECOVERING);
-  pg->osd->queue_for_recovery(pg);
-}
+  pg->state_set(PG_STATE_RECOVERING);//设置PG的state为PG_STATE_RECOVERING
+  pg->osd->queue_for_recovery(pg);//将pg交给osd的recovery线程处理队列，进行数据恢复
+}//加入到recovery_wq队列，然后等待线程recovery_tp处理
 
 void PG::RecoveryState::Recovering::release_reservations()
 {
@@ -6190,7 +6190,7 @@ PG::RecoveryState::Recovering::react(const AllReplicasRecovered &evt)
   PG *pg = context< RecoveryMachine >().pg;
   pg->state_clear(PG_STATE_RECOVERING);
   release_reservations();
-  return transit<Recovered>();
+  return transit<Recovered>();//接收到AllReplicasRecovered事件，则将pg的状态转化为Recovered状态
 }
 
 boost::statechart::result
@@ -6235,8 +6235,8 @@ PG::RecoveryState::Recovered::Recovered(my_context ctx)
     assert(pg->want_acting.size());
 
   if (context< Active >().all_replicas_activated)
-    post_event(GoClean());
-}
+    post_event(GoClean());//发送GoClean事件，看Recovered结构体定义则从Recovered状态转化为clean状态
+}//最后的PG状态就是Active+clean的状态。clean是Active的一个子状态。最终完成了PG的所有状态变换
 
 void PG::RecoveryState::Recovered::exit()
 {
@@ -6445,7 +6445,7 @@ boost::statechart::result PG::RecoveryState::Active::react(const MNotifyRec& not
   }
   return discard_event();
 }
-
+//收到副本的MOSDPGInfo消息，解析为MInfoRec事件，副本节点在pg->activate里面执行事物的回调发送过来的
 boost::statechart::result PG::RecoveryState::Active::react(const MInfoRec& infoevt)
 {
   PG *pg = context< RecoveryMachine >().pg;
@@ -6461,8 +6461,8 @@ boost::statechart::result PG::RecoveryState::Active::react(const MInfoRec& infoe
     pg->peer_activated.insert(infoevt.from);
     pg->blocked_by.erase(infoevt.from.shard);
     pg->publish_stats_to_osd();
-    if (pg->peer_activated.size() == pg->actingbackfill.size()) {
-      pg->all_activated_and_committed();
+    if (pg->peer_activated.size() == pg->actingbackfill.size()) {//这里判断是不是所有的osd都处理完成了事务。
+      pg->all_activated_and_committed();//----主要是发送事件通知PG改变状态，通知告知已经是AllReplicasActivated事件
     }
   }
   return discard_event();
@@ -6540,11 +6540,11 @@ boost::statechart::result PG::RecoveryState::Active::react(const QueryState& q)
   q.f->close_section();
   return forward_event();
 }
-
+//Active处理AllReplicasActivated事件
 boost::statechart::result PG::RecoveryState::Active::react(const AllReplicasActivated &evt)
 {
   PG *pg = context< RecoveryMachine >().pg;
-  all_replicas_activated = true;
+  all_replicas_activated = true;//是Active结构体成员
 
   pg->state_clear(PG_STATE_ACTIVATING);
   pg->state_clear(PG_STATE_CREATING);
@@ -6567,7 +6567,7 @@ boost::statechart::result PG::RecoveryState::Active::react(const AllReplicasActi
     pg->requeue_ops(pg->waiting_for_peered);
   }
 
-  pg->on_activate();
+  pg->on_activate();//调用ReplicatedPG::on_activate
 
   return discard_event();
 }
@@ -6609,15 +6609,15 @@ PG::RecoveryState::ReplicaActive::ReplicaActive(my_context ctx)
 
 
 boost::statechart::result PG::RecoveryState::ReplicaActive::react(
-  const Activate& actevt) {
+  const Activate& actevt) {//ReplicaActive状态处理事件Activate，同样调用pg->activate
   dout(10) << "In ReplicaActive, about to call activate" << dendl;
   PG *pg = context< RecoveryMachine >().pg;
   map<int, map<spg_t, pg_query_t> > query_map;
   pg->activate(*context< RecoveryMachine >().get_cur_transaction(),
 	       actevt.activation_epoch,
 	       *context< RecoveryMachine >().get_on_safe_context_list(),
-	       query_map, NULL, NULL);
-  dout(10) << "Activate Finished" << dendl;
+	       query_map, NULL, NULL);//准备进行数据恢复时的各种状态设置。完成后提交事务操作，等待事务完成
+  dout(10) << "Activate Finished" << dendl;//准备申请注册事务的回调处理函数C_PG_ActivateCommitted
   return discard_event();
 }
 
@@ -6702,7 +6702,7 @@ PG::RecoveryState::Stray::Stray(my_context ctx)
     context< RecoveryMachine >().get_on_safe_context_list());
 }
 
-boost::statechart::result PG::RecoveryState::Stray::react(const MLogRec& logevt)
+boost::statechart::result PG::RecoveryState::Stray::react(const MLogRec& logevt)//非主节点收到MLogRec事件当前状态为Stray
 {
   PG *pg = context< RecoveryMachine >().pg;
   MOSDPGLog *msg = logevt.msg.get();
@@ -6729,13 +6729,13 @@ boost::statechart::result PG::RecoveryState::Stray::react(const MLogRec& logevt)
 
     pg->pg_log.reset_backfill();
   } else {
-    pg->merge_log(*t, msg->info, msg->log, logevt.from);
+    pg->merge_log(*t, msg->info, msg->log, logevt.from);//合并接收到的log到本地log中
   }
 
   assert(pg->pg_log.get_head() == pg->info.last_update);
 
-  post_event(Activate(logevt.msg->info.last_epoch_started));
-  return transit<ReplicaActive>();
+  post_event(Activate(logevt.msg->info.last_epoch_started));//准备发送事件Activate
+  return transit<ReplicaActive>();//转化到状态ReplicaActive,ReplicaActive状态处理事件Activate
 }
 
 boost::statechart::result PG::RecoveryState::Stray::react(const MInfoRec& infoevt)
@@ -6758,10 +6758,10 @@ boost::statechart::result PG::RecoveryState::Stray::react(const MInfoRec& infoev
   return transit<ReplicaActive>();
 }
 
-boost::statechart::result PG::RecoveryState::Stray::react(const MQuery& query)
+boost::statechart::result PG::RecoveryState::Stray::react(const MQuery& query)//非主节点的当前状态为Stray
 {
   PG *pg = context< RecoveryMachine >().pg;
-  if (query.query.type == pg_query_t::INFO) {
+  if (query.query.type == pg_query_t::INFO) {//主节点发送的pg_query_t::INFO消息进这个分支
     pair<pg_shard_t, pg_info_t> notify_info;
     pg->update_history_from_master(query.query.history);
     pg->fulfill_info(query.from, query.query, notify_info);
@@ -6773,8 +6773,8 @@ boost::statechart::result PG::RecoveryState::Stray::react(const MQuery& query)
 	pg->get_osdmap()->get_epoch(),
 	notify_info.second),
       pg->past_intervals);
-  } else {
-    pg->fulfill_log(query.from, query.query, query.query_epoch);
+  } else {//第二次从主节点收到的消息是pg_query_t::LOG
+    pg->fulfill_log(query.from, query.query, query.query_epoch);//auth_osd节点收到MQuery消息，获取本地log
   }
   return discard_event();
 }
@@ -6809,7 +6809,7 @@ PG::RecoveryState::GetInfo::GetInfo(my_context ctx)
   : my_base(ctx),
     NamedState(context< RecoveryMachine >().pg->cct, "Started/Primary/Peering/GetInfo")
 {
-  context< RecoveryMachine >().log_enter(state_name);
+  context< RecoveryMachine >().log_enter(state_name);//会打印日志enter Started/Primary/Peering/GetInfo
 
   PG *pg = context< RecoveryMachine >().pg;
   pg->generate_past_intervals();
@@ -6818,14 +6818,15 @@ PG::RecoveryState::GetInfo::GetInfo(my_context ctx)
   assert(pg->blocked_by.empty());
 
   if (!prior_set.get())
-    pg->build_prior(prior_set);
+    pg->build_prior(prior_set);//创建当前pg的OSD集合,为数据的恢复做准备
 
   pg->reset_peer_features();
-  get_infos();
+  get_infos();//发送请求到所有的副本osd中，请求pg_info信息,发送事件MQuery& query
+  //query的类型是pg_query_t::INFO 。然后发送的请求都会记录在peer_info_request队列中
   if (peer_info_requested.empty() && !prior_set->pg_down) {
-    post_event(GotInfo());
-  }
-}
+    post_event(GotInfo());//向其他的osd发送的查询pg_info事件，一定会添加到peer_info_request队列中，
+  }//所以这里就不为空，直接结束
+}//等待replica osd获取pg_info结束后，再将结果通过事件发送给当前这个primary osd
 
 void PG::RecoveryState::GetInfo::get_infos()
 {
@@ -6834,7 +6835,7 @@ void PG::RecoveryState::GetInfo::get_infos()
 
   pg->blocked_by.clear();
   for (set<pg_shard_t>::const_iterator it = prior_set->probe.begin();
-       it != prior_set->probe.end();
+       it != prior_set->probe.end();//发送请求到所有的副本osd中
        ++it) {
     pg_shard_t peer = *it;
     if (peer == pg->pg_whoami) {
@@ -6844,18 +6845,18 @@ void PG::RecoveryState::GetInfo::get_infos()
       dout(10) << " have osd." << peer << " info " << pg->peer_info[peer] << dendl;
       continue;
     }
-    if (peer_info_requested.count(peer)) {
+    if (peer_info_requested.count(peer)) {//s.count(k) 得到s容器中键为k的元素个数。
       dout(10) << " already requested info from osd." << peer << dendl;
       pg->blocked_by.insert(peer.osd);
     } else if (!pg->get_osdmap()->is_up(peer.osd)) {
       dout(10) << " not querying info from down osd." << peer << dendl;
     } else {
       dout(10) << " querying info from osd." << peer << dendl;
-      context< RecoveryMachine >().send_query(
-	peer, pg_query_t(pg_query_t::INFO,
-			 it->shard, pg->pg_whoami.shard,
-			 pg->info.history,
-			 pg->get_osdmap()->get_epoch()));
+      context< RecoveryMachine >().send_query(//这里对应的是RecoveryMachine类中定义的send_query()函数
+	peer, pg_query_t(pg_query_t::INFO,//struct pg_query_t定义位于osd_types.h中的1906行
+			 it->shard, pg->pg_whoami.shard,//这两个参数前面为to，后面为from，从from发消息到to
+			 pg->info.history,//对应类型还是保存到query_map中，有do_queries处理
+			 pg->get_osdmap()->get_epoch()));//通过消息发送事件MQuery& query到其它的osd，其它OSD收到消息进入handle_pg_query处理
       peer_info_requested.insert(peer);
       pg->blocked_by.insert(peer.osd);
     }
@@ -6863,12 +6864,12 @@ void PG::RecoveryState::GetInfo::get_infos()
 
   pg->publish_stats_to_osd();
 }
-
+//primary osd接到事件MNotifyRec& infoevt，然后对该事件展开处理
 boost::statechart::result PG::RecoveryState::GetInfo::react(const MNotifyRec& infoevt) 
 {
   PG *pg = context< RecoveryMachine >().pg;
 
-  set<pg_shard_t>::iterator p = peer_info_requested.find(infoevt.from);
+  set<pg_shard_t>::iterator p = peer_info_requested.find(infoevt.from);//定义位于1878行
   if (p != peer_info_requested.end()) {
     peer_info_requested.erase(p);
     pg->blocked_by.erase(infoevt.from.osd);
@@ -6877,7 +6878,7 @@ boost::statechart::result PG::RecoveryState::GetInfo::react(const MNotifyRec& in
   epoch_t old_start = pg->info.history.last_epoch_started;
   if (pg->proc_replica_info(infoevt.from, infoevt.notify.info)) {
     // we got something new ...
-    auto_ptr<PriorSet> &prior_set = context< Peering >().prior_set;
+    auto_ptr<PriorSet> &prior_set = context< Peering >().prior_set;//prior_set为Peering的成员
     if (old_start < pg->info.history.last_epoch_started) {
       dout(10) << " last_epoch_started moved forward, rebuilding prior" << dendl;
       pg->build_prior(prior_set);
@@ -6936,7 +6937,7 @@ boost::statechart::result PG::RecoveryState::GetInfo::react(const MNotifyRec& in
 	    if (!osdmap->exists(o) || osdmap->get_info(o).lost_at > interval.first)
 	      continue;  // dne or lost
 	    if (osdmap->is_up(o)) {
-	      pg_info_t *pinfo;
+	      pg_info_t *pinfo;//通过peering获取的其它osd上的pg_info
 	      if (so == pg->pg_whoami) {
 		pinfo = &pg->info;
 	      } else {
@@ -6958,8 +6959,8 @@ boost::statechart::result PG::RecoveryState::GetInfo::react(const MNotifyRec& in
 	}
       }
       dout(20) << "Common features: " << hex << pg->get_min_peer_features() << dec << dendl;
-      post_event(GotInfo());
-    }
+      post_event(GotInfo());//向当前状态发送GotInfo事件，触发状态转为GetLog，进入GetLog处理
+    }//如果所有的副本都成功的将信息返回了，才会发送GotInfo事件则会转换状态为GetLog
   }
   return discard_event();
 }
@@ -6992,7 +6993,7 @@ boost::statechart::result PG::RecoveryState::GetInfo::react(const QueryState& q)
 
 void PG::RecoveryState::GetInfo::exit()
 {
-  context< RecoveryMachine >().log_exit(state_name, enter_time);
+  context< RecoveryMachine >().log_exit(state_name, enter_time);//会打印日志exit Started/Primary/Peering/GetInfo
   PG *pg = context< RecoveryMachine >().pg;
   utime_t dur = ceph_clock_now(pg->cct) - enter_time;
   pg->osd->recoverystate_perf->tinc(rs_getinfo_latency, dur);
@@ -7011,7 +7012,7 @@ PG::RecoveryState::GetLog::GetLog(my_context ctx)
   PG *pg = context< RecoveryMachine >().pg;
 
   // adjust acting?
-  if (!pg->choose_acting(auth_log_shard)) {
+  if (!pg->choose_acting(auth_log_shard)) {//进行acting选择。包括了选择auth_osd、primary选择，副本选择（计算backfill osd，recover osd）
     if (!pg->want_acting.empty()) {
       post_event(NeedActingChange());
     } else {
@@ -7022,9 +7023,9 @@ PG::RecoveryState::GetLog::GetLog(my_context ctx)
 
   // am i the best?
   if (auth_log_shard == pg->pg_whoami) {
-    post_event(GotLog());
+    post_event(GotLog());//不用peering其他osd上的log，向本端当前状态发送GotLog事件，进入GetMissing状态
     return;
-  }
+  }//判断auth 是不是正在处理的本osd上，如果是自己的话，那自己本身就是最全的log，所以不需要peering其它节点log
 
   const pg_info_t& best = pg->peer_info[auth_log_shard];
 
@@ -7047,15 +7048,15 @@ PG::RecoveryState::GetLog::GetLog(my_context ctx)
       request_log_from = ri.last_update;
   }
 
-  // how much?
+  // how much?  --- 由于自己不是auth osd，所以不是最全的log，所以要peering其他osd上的log
   dout(10) << " requesting log from osd." << auth_log_shard << dendl;
-  context<RecoveryMachine>().send_query(
+  context<RecoveryMachine>().send_query(//对应类型保存到query_map中，有do_queries处理
     auth_log_shard,
     pg_query_t(
-      pg_query_t::LOG,
+      pg_query_t::LOG,//这里用pg_query_t::LOG封装到message中，发到auth_log_shard.shard
       auth_log_shard.shard, pg->pg_whoami.shard,
       request_log_from, pg->info.history,
-      pg->get_osdmap()->get_epoch()));
+      pg->get_osdmap()->get_epoch())); 
 
   assert(pg->blocked_by.empty());
   pg->blocked_by.insert(auth_log_shard.osd);
@@ -7078,7 +7079,7 @@ boost::statechart::result PG::RecoveryState::GetLog::react(const AdvMap& advmap)
   return forward_event();
 }
 
-boost::statechart::result PG::RecoveryState::GetLog::react(const MLogRec& logevt)
+boost::statechart::result PG::RecoveryState::GetLog::react(const MLogRec& logevt)//primary收到MLogRec事件
 {
   assert(!msg);
   if (logevt.from != auth_log_shard) {
@@ -7089,7 +7090,7 @@ boost::statechart::result PG::RecoveryState::GetLog::react(const MLogRec& logevt
   dout(10) << "GetLog: received master log from osd"
 	   << logevt.from << dendl;
   msg = logevt.msg;
-  post_event(GotLog());
+  post_event(GotLog());//发送GotLog事件，从而从GetLog进入GetMissing状态,见下面所示
   return discard_event();
 }
 
@@ -7101,7 +7102,7 @@ boost::statechart::result PG::RecoveryState::GetLog::react(const GotLog&)
     dout(10) << "processing master log" << dendl;
     pg->proc_master_log(*context<RecoveryMachine>().get_cur_transaction(),
 			msg->info, msg->log, msg->missing, 
-			auth_log_shard);
+			auth_log_shard);//合并proc_master_log()
   }
   pg->start_flush(
     context< RecoveryMachine >().get_cur_transaction(),
@@ -7257,7 +7258,7 @@ PG::RecoveryState::GetMissing::GetMissing(my_context ctx)
 
   PG *pg = context< RecoveryMachine >().pg;
   assert(!pg->actingbackfill.empty());
-  for (set<pg_shard_t>::iterator i = pg->actingbackfill.begin();
+  for (set<pg_shard_t>::iterator i = pg->actingbackfill.begin();//开始peering所有副本的log信息和missing信息
        i != pg->actingbackfill.end();
        ++i) {
     if (*i == pg->get_primary()) continue;
@@ -7294,7 +7295,7 @@ PG::RecoveryState::GetMissing::GetMissing(my_context ctx)
     assert(pi.last_update >= pg->info.log_tail);  // or else choose_acting() did a bad thing
     if (pi.log_tail <= since) {
       dout(10) << " requesting log+missing since " << since << " from osd." << *i << dendl;
-      context< RecoveryMachine >().send_query(
+      context< RecoveryMachine >().send_query(//发送事件,等待所有的副本将自己的log和missing准备好发送给primary osd
 	*i,
 	pg_query_t(
 	  pg_query_t::LOG,
@@ -7333,18 +7334,18 @@ boost::statechart::result PG::RecoveryState::GetMissing::react(const MLogRec& lo
 {
   PG *pg = context< RecoveryMachine >().pg;
 
-  peer_missing_requested.erase(logevt.from);
+  peer_missing_requested.erase(logevt.from);//当接受到单个副本节点log事件时候，将peer_missing_requested 队列中对应osd的计数删除
   pg->proc_replica_log(*context<RecoveryMachine>().get_cur_transaction(),
 		       logevt.msg->info, logevt.msg->log, logevt.msg->missing, logevt.from);
-  
-  if (peer_missing_requested.empty()) {
-    if (pg->need_up_thru) {
+  //开始处理事件，proc_replica_log()合并副本的INFO，log，missing等信息
+  if (peer_missing_requested.empty()) {//所有副本OSD全部都返回了消息，已经获取了最权威的log
+    if (pg->need_up_thru) {//判断是否需要更新up_thru
       dout(10) << " still need up_thru update before going active" << dendl;
       post_event(NeedUpThru());
     } else {
       dout(10) << "Got last missing, don't need missing "
 	       << "posting CheckRepops" << dendl;
-      post_event(Activate(pg->get_osdmap()->get_epoch()));
+      post_event(Activate(pg->get_osdmap()->get_epoch()));//如果不需要更新up_thru，则发送Activate()事件
     }
   }
   return discard_event();

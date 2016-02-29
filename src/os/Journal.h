@@ -28,7 +28,7 @@ class PerfCounters;
 class Journal {
 protected:
   uuid_d fsid;
-  Finisher *finisher;
+  Finisher *finisher; //Ïß³Ì
 public:
   PerfCounters *logger;
 protected:

@@ -32,6 +32,9 @@
 #define _STR(x) #x
 #define STRINGIFY(x) _STR(x)
 
+//公共参数预先初始化
+//# iparams = {module_type = 4 CEPH_ENTITY_TYPE_OSD , name = {type = 4, id = "0", type_id = "osd.0"}}
+//# code_env = CODE_ENVIRONMENT_DAEMON
 CephContext *common_preinit(const CephInitParameters &iparams,
 			  enum code_environment_t code_env, int flags)
 {
@@ -39,6 +42,7 @@ CephContext *common_preinit(const CephInitParameters &iparams,
   g_code_env = code_env;
 
   // Create a configuration object
+  //# ceph_context.cc 361
   CephContext *cct = new CephContext(iparams.module_type);
 
   md_config_t *conf = cct->_conf;

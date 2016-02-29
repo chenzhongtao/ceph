@@ -8,10 +8,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-void ObjectStore::Transaction::_build_actions_from_tbl()
+void ObjectStore::Transaction::_build_actions_from_tbl()//进入这个流程之前，transaction中已经包含相关的操作
 {
   //used only for tbl encode
-  assert(use_tbl);
+  assert(use_tbl);//值为true，默认值为多少呢?
   //Now we assert each transaction should only be iterated once
   assert(coll_index.size() == 0);
   assert(object_index.size() == 0);
@@ -20,11 +20,11 @@ void ObjectStore::Transaction::_build_actions_from_tbl()
   assert(data_bl.length() == 0);
   assert(op_bl.length() == 0);
 
-  uint64_t ops = data.ops;
+  uint64_t ops = data.ops;//这个事物中一共包含多少项操作
 
   data.ops = 0;
-  use_tbl = false;
-  bufferlist::iterator p = tbl.begin();
+  use_tbl = false;//在prepare_transaction中进行数据编码，调用Transaction类中定义的各个操作函数use_tbl = true
+  bufferlist::iterator p = tbl.begin();//在这里进行解码，进入Transaction类中定义的各个操作函数的use_tbl = false分支
   __u32 op;
   while(!p.end()) {
     ::decode(op, p);
@@ -500,8 +500,8 @@ void ObjectStore::Transaction::_build_actions_from_tbl()
       assert("Unkown op" == 0);
     }
   }
-  use_tbl = true;
-  assert(ops == data.ops);
+  use_tbl = true;//完成事物操作和数据的解码过程
+  assert(ops == data.ops);//解码的过程中，会重新对事物包含的操作进行计数，必须和解码前的相等
 }
 
 #pragma GCC diagnostic pop

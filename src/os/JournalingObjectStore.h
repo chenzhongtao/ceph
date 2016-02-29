@@ -19,9 +19,11 @@
 #include "Journal.h"
 #include "common/RWLock.h"
 
+//zhangmin add 这里JournalingObjectStore从ObjectStore继承了虚函数queue_transactions，但是没有实现，因而其仍为一个抽象类
+//queue_transactions的实现在FileStore中，抽象类无法初始化对象，但可以定义指针访问子类对象。
 class JournalingObjectStore : public ObjectStore {
 protected:
-  Journal *journal;
+  Journal *journal;//添加了Journal的功能
   Finisher finisher;
 
 

@@ -748,7 +748,7 @@ int FileJournal::check_for_full(uint64_t seq, off64_t pos, off64_t size)
   else
     room = header.start - pos - 1;
   dout(10) << "room " << room << " max_size " << max_size << " pos " << pos << " header.start " << header.start
-	   << " top " << get_top() << dendl;
+	   << " top " << get_top() << dendl;//打印了日志
 
   if (do_sync_cond) {
     if (room < (header.max_size >> 1) &&
@@ -793,7 +793,7 @@ int FileJournal::prepare_multi_write(bufferlist& bl, uint64_t& orig_ops, uint64_
     int r = prepare_single_write(bl, queue_pos, orig_ops, orig_bytes);
     if (r == -ENOSPC) {
       if (orig_ops)
-	break;         // commit what we have
+	break;         // commit what we have ------ 默认没有执行后面的语句
 
       if (logger)
 	logger->inc(l_os_j_full);
@@ -827,7 +827,7 @@ int FileJournal::prepare_multi_write(bufferlist& bl, uint64_t& orig_ops, uint64_
 	break;
       }
     }
-  }
+  }// 上面的日志都没有打印
 
   dout(20) << "prepare_multi_write queue_pos now " << queue_pos << dendl;
   assert((write_pos + bl.length() == queue_pos) ||
@@ -859,7 +859,7 @@ void FileJournal::queue_completions_thru(uint64_t seq)
   assert(finisher_lock.is_locked());
   utime_t now = ceph_clock_now(g_ceph_context);
   while (!completions_empty()) {
-    completion_item next = completion_peek_front();
+    completion_item next = completion_peek_front();//完成日志写入，取出回调函数进行回调
     if (next.seq > seq)
       break;
     completion_pop_front();
@@ -872,18 +872,18 @@ void FileJournal::queue_completions_thru(uint64_t seq)
     if (logger) {
       logger->tinc(l_os_j_lat, lat);
     }
-    if (next.finish)
-      finisher->queue(next.finish);
+    if (next.finish)//zhangmin add 此处finisher定义为Journal类成员: Finisher *finisher
+      finisher->queue(next.finish);//zhangmin add 将C_JournaledAhead动态对象加入Finisher的队列
     if (next.tracked_op)
       next.tracked_op->mark_event("journaled_completion_queued");
   }
-  finisher_cond.Signal();
+  finisher_cond.Signal();//唤醒FileJournal::flush操作
 }
 
 int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64_t& orig_ops, uint64_t& orig_bytes)
 {
   // grab next item
-  write_item &next_write = peek_write();
+  write_item &next_write = peek_write();//获得容器首元素的引用。
   uint64_t seq = next_write.seq;
   bufferlist &ebl = next_write.bl;
   unsigned head_size = sizeof(entry_header_t);
@@ -896,7 +896,7 @@ int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64
   off64_t size = ROUND_UP_TO(base_size + pre_pad, header.alignment);
   unsigned post_pad = size - base_size - pre_pad;
 
-  int r = check_for_full(seq, queue_pos, size);
+  int r = check_for_full(seq, queue_pos, size);//打印日志
   if (r < 0)
     return r;   // ENOSPC or EAGAIN
 
@@ -924,7 +924,7 @@ int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64
   bl.append((const char*)&h, sizeof(h));
   if (pre_pad) {
     bufferptr bp = buffer::create_static(pre_pad, zero_buf);
-    bl.push_back(bp);
+    bl.push_back(bp);//向容器尾部插入元素t
   }
   bl.claim_append(ebl, buffer::list::CLAIM_ALLOW_NONSHAREABLE); // potential zero-copy
 
@@ -1133,7 +1133,7 @@ void FileJournal::do_write(bufferlist& bl)
 		 << " due to completion plug" << dendl;
       } else {
 	dout(20) << "do_write queueing finishers through seq " << journaled_seq << dendl;
-	queue_completions_thru(journaled_seq);
+	queue_completions_thru(journaled_seq);//到此处已经完成了日志的数据写入
       }
     }
   }
@@ -1164,7 +1164,7 @@ void FileJournal::write_thread_entry()
 	  break;
 	dout(20) << "write_thread_entry going to sleep" << dendl;
 	writeq_cond.Wait(writeq_lock);
-	dout(20) << "write_thread_entry woke up" << dendl;
+	dout(20) << "write_thread_entry woke up" << dendl;//这里被唤醒打印日志
 	continue;
       }
     }
@@ -1199,7 +1199,7 @@ void FileJournal::write_thread_entry()
 	dout(20) << "write_thread_entry woke up" << dendl;
       }
     }
-#endif
+#endif//------------ 默认没走上面的分支，即没有HAVE_LIBAIO
 
     Mutex::Locker locker(write_lock);
     uint64_t orig_ops = 0;
@@ -1209,7 +1209,7 @@ void FileJournal::write_thread_entry()
     int r = prepare_multi_write(bl, orig_ops, orig_bytes);
     // Don't care about journal full if stoppping, so drop queue and
     // possibly let header get written and loop above to notice stop
-    if (r == -ENOSPC) {
+    if (r == -ENOSPC) {//------------ 默认没走这个分支
       if (write_stop) {
 	dout(20) << "write_thread_entry full and stopping, throw out queue and finish up" << dendl;
 	while (!writeq_empty()) {
@@ -1234,9 +1234,9 @@ void FileJournal::write_thread_entry()
 
 #ifdef HAVE_LIBAIO
     if (aio)
-      do_aio_write(bl);
+      do_aio_write(bl);//里面对应 write_finish_thread的处理
     else
-      do_write(bl);
+      do_write(bl); 
 #else
     do_write(bl);
 #endif
@@ -1429,7 +1429,7 @@ void FileJournal::write_finish_thread_entry()
 		 << "~" << ai->len << " done" << dendl;
 	ai->done = true;
       }
-      check_aio_completion();
+      check_aio_completion();//检查是否有aio请求完成，如果完成，则把该请求从completions队列删除，并添加到Finisher队列里
     }
   }
   dout(10) << "write_finish_thread_entry exit" << dendl;
@@ -1511,12 +1511,12 @@ void FileJournal::submit_entry(uint64_t seq, bufferlist& e, int alignment,
     Mutex::Locker l1(writeq_lock);  // ** lock **
     Mutex::Locker l2(completions_lock);  // ** lock **
     completions.push_back(
-      completion_item(
+      completion_item(//实例化一个completion_item对象
 	seq, oncommit, ceph_clock_now(g_ceph_context), osd_op));
-    if (writeq.empty())
-      writeq_cond.Signal();
-    writeq.push_back(write_item(seq, e, alignment, osd_op));
-  }
+    if (writeq.empty())//writeq为空，则唤醒线程
+      writeq_cond.Signal();//唤醒FileJournal类中写日志的独立线程write_thread，进入write_thread_entry写数据
+    writeq.push_back(write_item(seq, e, alignment, osd_op));//实例化一个write_item对象并入队列，write_item中包含了事物数据 
+  }//需要写入的buffer保存在参数e中
 }
 
 bool FileJournal::writeq_empty()
@@ -1536,7 +1536,7 @@ void FileJournal::pop_write()
 {
   assert(write_lock.is_locked());
   Mutex::Locker locker(writeq_lock);
-  writeq.pop_front();
+  writeq.pop_front();//删除容器头部的元素t
 }
 
 void FileJournal::commit_start(uint64_t seq)

@@ -439,7 +439,7 @@ public:
   void check_op(Op *op);
   void start_write(Op *op);
 public:
-  ECBackend(
+  ECBackend(//构造函数的实现在.cc文件的170行
     PGBackend::Listener *pg,
     coll_t coll,
     coll_t temp_coll,

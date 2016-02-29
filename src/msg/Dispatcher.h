@@ -192,6 +192,11 @@ public:
 protected:
   CephContext *cct;
 private:
+  // add by chenzhongtao
+  /*
+   * 两个复制构造函数声明为私有，表示禁用复制构造函数
+   */
+  
   Dispatcher(const Dispatcher &rhs);
   Dispatcher& operator=(const Dispatcher &rhs);
 };

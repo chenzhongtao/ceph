@@ -1388,8 +1388,8 @@ public:
     void print(std::ostream *out) const {			   \
       *out << #T;						   \
     }								   \
-  };
-  TrivialEvent(Initialize)
+  };//这是宏定义对应一个结构体T，T继承自boost::statechart::event< T >
+  TrivialEvent(Initialize)//定义了Initialize事件类型，用于改变PG状态机
   TrivialEvent(Load)
   TrivialEvent(GotInfo)
   TrivialEvent(NeedUpThru)
@@ -1419,7 +1419,7 @@ public:
   TrivialEvent(IntervalFlush)
 
   /* Encapsulates PG recovery process */
-  class RecoveryState {
+  class RecoveryState {//构造函数位于1978行
     void start_handle(RecoveryCtx *new_ctx);
     void end_handle();
   public:
@@ -1460,7 +1460,7 @@ public:
 	assert(state->rctx->query_map);
 	(*state->rctx->query_map)[to.osd][spg_t(pg->info.pgid.pgid, to.shard)] =
 	  query;
-      }
+      }//rctx对应的类型为RecoveryCtx，通过[]运算符向映射表中插入一个二元组(spg_t, pg_query_t)
 
       map<int, map<spg_t, pg_query_t> > *get_query_map() {
 	assert(state->rctx);
@@ -1494,23 +1494,23 @@ public:
 	assert(state->rctx->notify_list);
 	(*state->rctx->notify_list)[to.osd].push_back(make_pair(info, pi));
       }
-    };
-    friend class RecoveryMachine;
-
+    };//--------- 后面定义了一个RecoveryState的成员machine 1961行
+    friend class RecoveryMachine;//声明RecoveryMachine为RecoveryState的友元类，可以随意访问RecoveryState的私有成员
+    //声明友元类，是建立类与类之间的联系，实现类之间数据共享的一种途径
     /* States */
 
     struct Crashed : boost::statechart::state< Crashed, RecoveryMachine >, NamedState {
       Crashed(my_context ctx);
     };
 
-    struct Started;
+    struct Started;//上面定义的状态机为RecoveryMachine，后面定义了其有哪些状态Crashed，Initial，Reset，Started
     struct Reset;
 
     struct Initial : boost::statechart::state< Initial, RecoveryMachine >, NamedState {
-      Initial(my_context ctx);
+      Initial(my_context ctx);//定义结构体Initial，继承后面的两个
       void exit();
 
-      typedef boost::mpl::list <
+      typedef boost::mpl::list <//一个状态可以定义任意数量的动作，多个动作可放入mpl::list
 	boost::statechart::transition< Initialize, Reset >,
 	boost::statechart::custom_reaction< Load >,
 	boost::statechart::custom_reaction< NullEvt >,
@@ -1538,10 +1538,10 @@ public:
 	boost::statechart::custom_reaction< FlushedEvt >,
 	boost::statechart::custom_reaction< IntervalFlush >,
 	boost::statechart::transition< boost::statechart::event_base, Crashed >
-	> reactions;
+	> reactions;//下面这些都是状态处理函数
       boost::statechart::result react(const QueryState& q);
       boost::statechart::result react(const AdvMap&);
-      boost::statechart::result react(const ActMap&);
+      boost::statechart::result react(const ActMap&);//最后将状态转化为了Started
       boost::statechart::result react(const FlushedEvt&);
       boost::statechart::result react(const IntervalFlush&);
       boost::statechart::result react(const boost::statechart::event_base&) {
@@ -1552,7 +1552,7 @@ public:
     struct Start;
 
     struct Started : boost::statechart::state< Started, RecoveryMachine, Start >, NamedState {
-      Started(my_context ctx);
+      Started(my_context ctx);//在定义Started的时候默认设置了一个子状态start
       void exit();
 
       typedef boost::mpl::list <
@@ -1582,12 +1582,12 @@ public:
     struct Stray;
 
     struct Start : boost::statechart::state< Start, Started >, NamedState {
-      Start(my_context ctx);
+      Start(my_context ctx);//函数体在PG.cc中5537行，Start的上一个状态为Started
       void exit();
 
       typedef boost::mpl::list <
-	boost::statechart::transition< MakePrimary, Primary >,
-	boost::statechart::transition< MakeStray, Stray >
+	boost::statechart::transition< MakePrimary, Primary >,//如果接受到MakePrimary事件，则将状态start转化为Primary状态
+	boost::statechart::transition< MakeStray, Stray >//如果接受到Makestray事件，则将状态start转化为stray状态
 	> reactions;
     };
 
@@ -1602,7 +1602,7 @@ public:
     };
 
     struct Primary : boost::statechart::state< Primary, Started, Peering >, NamedState {
-      Primary(my_context ctx);
+      Primary(my_context ctx);//Primary有子状态Peering，中间Started为当前状态的上一个状态
       void exit();
 
       typedef boost::mpl::list <
@@ -1638,7 +1638,7 @@ public:
     struct Peering : boost::statechart::state< Peering, Primary, GetInfo >, NamedState {
       std::auto_ptr< PriorSet > prior_set;
 
-      Peering(my_context ctx);
+      Peering(my_context ctx);////Peering有子状态GetInfo,中间Primary为当前状态的上一个状态
       void exit();
 
       typedef boost::mpl::list <
@@ -1653,7 +1653,7 @@ public:
     struct WaitLocalRecoveryReserved;
     struct Activating;
     struct Active : boost::statechart::state< Active, Primary, Activating >, NamedState {
-      Active(my_context ctx);
+      Active(my_context ctx);//Active有子状态Activating
       void exit();
 
       const set<pg_shard_t> remote_shards_to_reserve_recovery;
@@ -1683,7 +1683,7 @@ public:
     };
 
     struct Clean : boost::statechart::state< Clean, Active >, NamedState {
-      typedef boost::mpl::list<
+      typedef boost::mpl::list<//Clean是PG的一个字状态
 	boost::statechart::transition< DoRecovery, WaitLocalRecoveryReserved >
       > reactions;
       Clean(my_context ctx);
@@ -1824,7 +1824,7 @@ public:
     struct WaitRemoteRecoveryReserved : boost::statechart::state< WaitRemoteRecoveryReserved, Active >, NamedState {
       typedef boost::mpl::list <
 	boost::statechart::custom_reaction< RemoteRecoveryReserved >,
-	boost::statechart::transition< AllRemotesReserved, Recovering >
+	boost::statechart::transition< AllRemotesReserved, Recovering >//事件AllRemotesReserved，状态转化为Recovering
 	> reactions;
       set<pg_shard_t>::const_iterator remote_recovery_reservation_it;
       WaitRemoteRecoveryReserved(my_context ctx);
@@ -1875,7 +1875,7 @@ public:
     struct GetLog;
 
     struct GetInfo : boost::statechart::state< GetInfo, Peering >, NamedState {
-      set<pg_shard_t> peer_info_requested;
+      set<pg_shard_t> peer_info_requested;//该状态的上一个状态为Peering
 
       GetInfo(my_context ctx);
       void exit();
@@ -1883,7 +1883,7 @@ public:
 
       typedef boost::mpl::list <
 	boost::statechart::custom_reaction< QueryState >,
-	boost::statechart::transition< GotInfo, GetLog >,
+	boost::statechart::transition< GotInfo, GetLog >,//收到GotInfo时间，进入下一个状态为GetLog
 	boost::statechart::custom_reaction< MNotifyRec >
 	> reactions;
       boost::statechart::result react(const QueryState& q);
@@ -1958,7 +1958,7 @@ public:
     };
 
 
-    RecoveryMachine machine;
+    RecoveryMachine machine;//类定义在上面，用于管理状态机
     PG *pg;
 
     /// context passed in by state machine caller
@@ -1976,14 +1976,14 @@ public:
 
   public:
     RecoveryState(PG *pg)
-      : machine(this, pg), pg(pg), orig_ctx(0) {
-      machine.initiate();
+      : machine(this, pg), pg(pg), orig_ctx(0) {//这里的this指的是RecoveryState的对象，实例化了一个RecoveryMachine对象
+      machine.initiate();//初始化machine的状态为Initial状态
     }
 
     void handle_event(const boost::statechart::event_base &evt,
 		      RecoveryCtx *rctx) {
       start_handle(rctx);
-      machine.process_event(evt);
+      machine.process_event(evt);//machine.process_event为boost::statechart::state_machine api
       end_handle();
     }
 
@@ -2013,9 +2013,9 @@ public:
   const spg_t&      get_pgid() const { return pg_id; }
   int        get_nrep() const { return acting.size(); }
 
-  void reset_peer_features() { peer_features = (uint64_t)-1; }
+  void reset_peer_features() { peer_features = (uint64_t)-1; }//这里-1转换为无符号数为ffffffffffffffff即64个1
   uint64_t get_min_peer_features() const { return peer_features; }
-  void apply_peer_features(uint64_t f) { peer_features &= f; }
+  void apply_peer_features(uint64_t f) { peer_features &= f; }//如果是-1，则与运算后为1111，从而和其它宏定义相与，构成false的情况
 
   void init_primary_up_acting(
     const vector<int> &newup,
