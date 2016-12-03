@@ -1,244 +1,1220 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.6)
+project(ceph)
 
-project(Ceph)
-set(VERSION "0.90")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-if (NOT (CMAKE_MAJOR_VERSION LESS 3))
-  # Tweak policies (this one disables "missing" dependency warning)
-  cmake_policy(SET CMP0046 OLD)
-endif(NOT (CMAKE_MAJOR_VERSION LESS 3))
+include_directories("F:\\code\\usr_include")
+include_directories("F:\\code\\usr_include\\x86_64-linux-gnu")
+include_directories("src")
+include_directories("src/erasure-code/isa/isa-l")
+include_directories("src/gmock")
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
-include_directories(  
-  ${PROJECT_BINARY_DIR}/src/include
-  ${OFED_PREFIX}/include
-  ${LEVELDB_PREFIX}/include
-  ${PROJECT_SOURCE_DIR}/src
-)
+set(SOURCE_FILES
+        src/arch/arm.h
+        src/arch/intel.h
+        src/arch/probe.h
+        src/auth/Auth.h
+        src/auth/AuthAuthorizeHandler.h
+        src/auth/AuthClientHandler.h
+        src/auth/AuthMethodList.h
+        src/auth/AuthServiceHandler.h
+        src/auth/AuthSessionHandler.h
+        src/auth/cephx/CephxAuthorizeHandler.h
+        src/auth/cephx/CephxClientHandler.h
+        src/auth/cephx/CephxKeyServer.h
+        src/auth/cephx/CephxProtocol.h
+        src/auth/cephx/CephxServiceHandler.h
+        src/auth/cephx/CephxSessionHandler.h
+        src/auth/Crypto.h
+        src/auth/KeyRing.h
+        src/auth/none/AuthNoneAuthorizeHandler.h
+        src/auth/none/AuthNoneClientHandler.h
+        src/auth/none/AuthNoneProtocol.h
+        src/auth/none/AuthNoneServiceHandler.h
+        src/auth/none/AuthNoneSessionHandler.h
+        src/auth/RotatingKeyRing.h
+        src/auth/unknown/AuthUnknownAuthorizeHandler.h
+        src/auth/unknown/AuthUnknownClientHandler.h
+        src/auth/unknown/AuthUnknownProtocol.h
+        src/auth/unknown/AuthUnknownServiceHandler.h
+        src/auth/unknown/AuthUnknownSessionHandler.h
+        src/client/barrier.h
+        src/client/Client.h
+        src/client/ClientSnapRealm.h
+        src/client/Dentry.h
+        src/client/Dir.h
+        src/client/Fh.h
+        src/client/fuse_ll.h
+        src/client/hypertable/CephBroker.h
+        src/client/Inode.h
+        src/client/ioctl.h
+        src/client/MetaRequest.h
+        src/client/MetaSession.h
+        src/client/ObjecterWriteback.h
+        src/client/SyntheticClient.h
+        src/client/Trace.h
+        src/cls/lock/cls_lock_client.h
+        src/cls/lock/cls_lock_ops.h
+        src/cls/lock/cls_lock_types.h
+        src/cls/log/cls_log_client.h
+        src/cls/log/cls_log_ops.h
+        src/cls/log/cls_log_types.h
+        src/cls/rbd/cls_rbd.h
+        src/cls/rbd/cls_rbd_client.h
+        src/cls/refcount/cls_refcount_client.h
+        src/cls/refcount/cls_refcount_ops.h
+        src/cls/replica_log/cls_replica_log_client.h
+        src/cls/replica_log/cls_replica_log_ops.h
+        src/cls/replica_log/cls_replica_log_types.h
+        src/cls/rgw/cls_rgw_client.h
+        src/cls/rgw/cls_rgw_ops.h
+        src/cls/rgw/cls_rgw_types.h
+        src/cls/statelog/cls_statelog_client.h
+        src/cls/statelog/cls_statelog_ops.h
+        src/cls/statelog/cls_statelog_types.h
+        src/cls/user/cls_user_client.h
+        src/cls/user/cls_user_ops.h
+        src/cls/user/cls_user_types.h
+        src/cls/version/cls_version_client.h
+        src/cls/version/cls_version_ops.h
+        src/cls/version/cls_version_types.h
+        src/common/address_helper.h
+        src/common/admin_socket.h
+        src/common/admin_socket_client.h
+        src/common/arch.h
+        src/common/armor.h
+        src/common/AsyncReserver.h
+        src/common/BackTrace.h
+        src/common/blkdev.h
+        src/common/ceph_argparse.h
+        src/common/ceph_context.h
+        src/common/ceph_crypto.h
+        src/common/ceph_crypto_cms.h
+        src/common/ceph_json.h
+        src/common/Clock.h
+        src/common/cmdparse.h
+        src/common/code_environment.h
+        src/common/common_init.h
+        src/common/compiler_extensions.h
+        src/common/Cond.h
+        src/common/config.h
+        src/common/config_obs.h
+        src/common/config_opts.h
+        src/common/ConfUtils.h
+        src/common/ContextCompletion.h
+        src/common/Continuation.h
+        src/common/crc32c_intel_baseline.h
+        src/common/crc32c_intel_fast.h
+        src/common/Cycles.h
+        src/common/debug.h
+        src/common/DecayCounter.h
+        src/common/dout.h
+        src/common/entity_name.h
+        src/common/environment.h
+        src/common/errno.h
+        src/common/escape.h
+        src/common/fd.h
+        src/common/Finisher.h
+        src/common/Formatter.h
+        src/common/HeartbeatMap.h
+        src/common/hex.h
+        src/common/histogram.h
+        src/common/hobject.h
+        src/common/Initialize.h
+        src/common/io_priority.h
+        src/common/likely.h
+        src/common/linux_version.h
+        src/common/lockdep.h
+        src/common/LogClient.h
+        src/common/LogEntry.h
+        src/common/lru_map.h
+        src/common/MemoryModel.h
+        src/common/mime.h
+        src/common/module.h
+        src/common/Mutex.h
+        src/common/obj_bencher.h
+        src/common/OutputDataSocket.h
+        src/common/perf_counters.h
+        src/common/pick_address.h
+        src/common/pipe.h
+        src/common/PrebufferedStreambuf.h
+        src/common/Preforker.h
+        src/common/PrioritizedQueue.h
+        src/common/QueueRing.h
+        src/common/Readahead.h
+        src/common/RefCountedObj.h
+        src/common/run_cmd.h
+        src/common/RWLock.h
+        src/common/safe_io.h
+        src/common/sctp_crc32.h
+        src/common/secret.h
+        src/common/Semaphore.h
+        src/common/signal.h
+        src/common/SimpleRNG.h
+        src/common/simple_spin.h
+        src/common/SloppyCRCMap.h
+        src/common/snap_types.h
+        src/common/static_assert.h
+        src/common/strtol.h
+        src/common/sync_filesystem.h
+        src/common/TextTable.h
+        src/common/Thread.h
+        src/common/Throttle.h
+        src/common/Timer.h
+        src/common/TrackedOp.h
+        src/common/utf8.h
+        src/common/version.h
+        src/common/WorkQueue.h
+        src/common/xattr.h
+        src/crush/builder.h
+        src/crush/crush.h
+        src/crush/CrushCompiler.h
+        src/crush/CrushTester.h
+        src/crush/CrushTreeDumper.h
+        src/crush/CrushWrapper.h
+        src/crush/crush_ln_table.h
+        src/crush/grammar.h
+        src/crush/hash.h
+        src/crush/mapper.h
+        src/crush/types.h
+        src/erasure-code/ErasureCode.h
+        src/erasure-code/ErasureCodeInterface.h
+        src/erasure-code/ErasureCodePlugin.h
+        src/erasure-code/isa/ErasureCodeIsa.h
+        src/erasure-code/isa/ErasureCodeIsaTableCache.h
+        src/erasure-code/isa/isa-l/erasure_code/ec_base.h
+        src/erasure-code/isa/isa-l/include/erasure_code.h
+        src/erasure-code/isa/isa-l/include/gf_vect_mul.h
+        src/erasure-code/isa/isa-l/include/types.h
+        src/erasure-code/isa/xor_op.h
+        src/erasure-code/jerasure/ErasureCodeJerasure.h
+        src/erasure-code/lrc/ErasureCodeLrc.h
+        src/erasure-code/shec/ErasureCodeShec.h
+        src/erasure-code/shec/ErasureCodeShecTableCache.h
+        src/erasure-code/shec/shec.h
+        src/global/global_context.h
+        src/global/global_init.h
+        src/global/pidfile.h
+        src/global/signal_handler.h
+        src/gmock/fused-src/gmock/gmock.h
+        src/gmock/fused-src/gtest/gtest.h
+        src/gmock/gtest/fused-src/gtest/gtest.h
+        src/gmock/gtest/include/gtest/gtest-death-test.h
+        src/gmock/gtest/include/gtest/gtest-message.h
+        src/gmock/gtest/include/gtest/gtest-param-test.h
+        src/gmock/gtest/include/gtest/gtest-printers.h
+        src/gmock/gtest/include/gtest/gtest-spi.h
+        src/gmock/gtest/include/gtest/gtest-test-part.h
+        src/gmock/gtest/include/gtest/gtest-typed-test.h
+        src/gmock/gtest/include/gtest/gtest.h
+        src/gmock/gtest/include/gtest/gtest_pred_impl.h
+        src/gmock/gtest/include/gtest/gtest_prod.h
+        src/gmock/gtest/include/gtest/internal/gtest-death-test-internal.h
+        src/gmock/gtest/include/gtest/internal/gtest-filepath.h
+        src/gmock/gtest/include/gtest/internal/gtest-internal.h
+        src/gmock/gtest/include/gtest/internal/gtest-linked_ptr.h
+        src/gmock/gtest/include/gtest/internal/gtest-param-util-generated.h
+        src/gmock/gtest/include/gtest/internal/gtest-param-util.h
+        src/gmock/gtest/include/gtest/internal/gtest-port.h
+        src/gmock/gtest/include/gtest/internal/gtest-string.h
+        src/gmock/gtest/include/gtest/internal/gtest-tuple.h
+        src/gmock/gtest/include/gtest/internal/gtest-type-util.h
+        src/gmock/gtest/samples/prime_tables.h
+        src/gmock/gtest/samples/sample1.h
+        src/gmock/gtest/samples/sample2.h
+        src/gmock/gtest/samples/sample3-inl.h
+        src/gmock/gtest/samples/sample4.h
+        src/gmock/gtest/src/gtest-internal-inl.h
+        src/gmock/gtest/test/gtest-param-test_test.h
+        src/gmock/gtest/test/gtest-typed-test_test.h
+        src/gmock/gtest/test/production.h
+        src/gmock/gtest/xcode/Samples/FrameworkSample/widget.h
+        src/gmock/include/gmock/gmock-actions.h
+        src/gmock/include/gmock/gmock-cardinalities.h
+        src/gmock/include/gmock/gmock-generated-actions.h
+        src/gmock/include/gmock/gmock-generated-function-mockers.h
+        src/gmock/include/gmock/gmock-generated-matchers.h
+        src/gmock/include/gmock/gmock-generated-nice-strict.h
+        src/gmock/include/gmock/gmock-matchers.h
+        src/gmock/include/gmock/gmock-more-actions.h
+        src/gmock/include/gmock/gmock-more-matchers.h
+        src/gmock/include/gmock/gmock-spec-builders.h
+        src/gmock/include/gmock/gmock.h
+        src/gmock/include/gmock/internal/gmock-generated-internal-utils.h
+        src/gmock/include/gmock/internal/gmock-internal-utils.h
+        src/gmock/include/gmock/internal/gmock-port.h
+        src/gmock/test/gmock_link_test.h
+        src/include/addr_parsing.h
+        src/include/assert.h
+        src/include/atomic.h
+        src/include/bitmapper.h
+        src/include/blobhash.h
+        src/include/buffer.h
+        src/include/byteorder.h
+        src/include/cephfs/libcephfs.h
+        src/include/ceph_features.h
+        src/include/ceph_frag.h
+        src/include/ceph_fs.h
+        src/include/ceph_hash.h
+        src/include/cmp.h
+        src/include/color.h
+        src/include/compat.h
+        src/include/CompatSet.h
+        src/include/Context.h
+        src/include/crc32c.h
+        src/include/Distribution.h
+        src/include/elist.h
+        src/include/encoding.h
+        src/include/err.h
+        src/include/error.h
+        src/include/filepath.h
+        src/include/frag.h
+        src/include/hash.h
+        src/include/hash_namespace.h
+        src/include/intarith.h
+        src/include/interval_set.h
+        src/include/int_types.h
+        src/include/ipaddr.h
+        src/include/krbd.h
+        src/include/linux_fiemap.h
+        src/include/lru.h
+        src/include/memory.h
+        src/include/msgr.h
+        src/include/object.h
+        src/include/on_exit.h
+        src/include/page.h
+        src/include/rados/buffer.h
+        src/include/rados/crc32c.h
+        src/include/rados/librados.h
+        src/include/rados/librgw.h
+        src/include/rados/memory.h
+        src/include/rados/page.h
+        src/include/rados/rados_types.h
+        src/include/rados.h
+        src/include/radosstriper/libradosstriper.h
+        src/include/rangeset.h
+        src/include/rbd/features.h
+        src/include/rbd/librbd.h
+        src/include/rbd_types.h
+        src/include/Spinlock.h
+        src/include/stat.h
+        src/include/statlite.h
+        src/include/stringify.h
+        src/include/str_list.h
+        src/include/str_map.h
+        src/include/types.h
+        src/include/unordered_map.h
+        src/include/unordered_set.h
+        src/include/util.h
+        src/include/utime.h
+        src/include/uuid.h
+        src/include/xlist.h
+        src/java/native/JniConstants.h
+        src/java/native/ScopedLocalRef.h
+        src/json_spirit/json_spirit.h
+        src/json_spirit/json_spirit_error_position.h
+        src/json_spirit/json_spirit_reader.h
+        src/json_spirit/json_spirit_reader_template.h
+        src/json_spirit/json_spirit_stream_reader.h
+        src/json_spirit/json_spirit_utils.h
+        src/json_spirit/json_spirit_value.h
+        src/json_spirit/json_spirit_writer.h
+        src/json_spirit/json_spirit_writer_options.h
+        src/json_spirit/json_spirit_writer_template.h
+        src/key_value_store/key_value_structure.h
+        src/key_value_store/kvs_arg_types.h
+        src/key_value_store/kv_flat_btree_async.h
+        src/librados/AioCompletionImpl.h
+        src/librados/IoCtxImpl.h
+        src/librados/ListObjectImpl.h
+        src/librados/PoolAsyncCompletionImpl.h
+        src/librados/RadosClient.h
+        src/librados/RadosXattrIter.h
+        src/librados/snap_set_diff.h
+        src/libradosstriper/MultiAioCompletionImpl.h
+        src/libradosstriper/RadosStriperImpl.h
+        src/librbd/AioCompletion.h
+        src/librbd/AioRequest.h
+        src/librbd/AsyncFlattenRequest.h
+        src/librbd/AsyncObjectThrottle.h
+        src/librbd/AsyncOperation.h
+        src/librbd/AsyncRequest.h
+        src/librbd/AsyncResizeRequest.h
+        src/librbd/AsyncTrimRequest.h
+        src/librbd/CopyupRequest.h
+        src/librbd/ImageCtx.h
+        src/librbd/ImageWatcher.h
+        src/librbd/internal.h
+        src/librbd/LibrbdWriteback.h
+        src/librbd/ObjectMap.h
+        src/librbd/parent_types.h
+        src/librbd/SnapInfo.h
+        src/librbd/TaskFinisher.h
+        src/librbd/WatchNotifyTypes.h
+        src/log/Entry.h
+        src/log/EntryQueue.h
+        src/log/Log.h
+        src/log/SubsystemMap.h
+        src/mds/Beacon.h
+        src/mds/Capability.h
+        src/mds/CDentry.h
+        src/mds/CDir.h
+        src/mds/CInode.h
+        src/mds/events/ECommitted.h
+        src/mds/events/EExport.h
+        src/mds/events/EFragment.h
+        src/mds/events/EImportFinish.h
+        src/mds/events/EImportStart.h
+        src/mds/events/EMetaBlob.h
+        src/mds/events/ENoOp.h
+        src/mds/events/EOpen.h
+        src/mds/events/EResetJournal.h
+        src/mds/events/ESession.h
+        src/mds/events/ESessions.h
+        src/mds/events/ESlaveUpdate.h
+        src/mds/events/ESubtreeMap.h
+        src/mds/events/ETableClient.h
+        src/mds/events/ETableServer.h
+        src/mds/events/EUpdate.h
+        src/mds/flock.h
+        src/mds/inode_backtrace.h
+        src/mds/InoTable.h
+        src/mds/JournalPointer.h
+        src/mds/LocalLock.h
+        src/mds/Locker.h
+        src/mds/locks.h
+        src/mds/LogEvent.h
+        src/mds/LogSegment.h
+        src/mds/MDBalancer.h
+        src/mds/MDCache.h
+        src/mds/MDLog.h
+        src/mds/MDS.h
+        src/mds/MDSAuthCaps.h
+        src/mds/MDSContext.h
+        src/mds/MDSContinuation.h
+        src/mds/MDSMap.h
+        src/mds/MDSTable.h
+        src/mds/MDSTableClient.h
+        src/mds/MDSTableServer.h
+        src/mds/mdstypes.h
+        src/mds/mds_table_types.h
+        src/mds/Migrator.h
+        src/mds/Mutation.h
+        src/mds/RecoveryQueue.h
+        src/mds/ScatterLock.h
+        src/mds/Server.h
+        src/mds/SessionMap.h
+        src/mds/SimpleLock.h
+        src/mds/snap.h
+        src/mds/SnapClient.h
+        src/mds/SnapRealm.h
+        src/mds/SnapServer.h
+        src/messages/MAuth.h
+        src/messages/MAuthReply.h
+        src/messages/MBackfillReserve.h
+        src/messages/MCacheExpire.h
+        src/messages/MClientCapRelease.h
+        src/messages/MClientCaps.h
+        src/messages/MClientLease.h
+        src/messages/MClientQuota.h
+        src/messages/MClientReconnect.h
+        src/messages/MClientReply.h
+        src/messages/MClientRequest.h
+        src/messages/MClientRequestForward.h
+        src/messages/MClientSession.h
+        src/messages/MClientSnap.h
+        src/messages/MCommand.h
+        src/messages/MCommandReply.h
+        src/messages/MDataPing.h
+        src/messages/MDentryLink.h
+        src/messages/MDentryUnlink.h
+        src/messages/MDirUpdate.h
+        src/messages/MDiscover.h
+        src/messages/MDiscoverReply.h
+        src/messages/MExportCaps.h
+        src/messages/MExportCapsAck.h
+        src/messages/MExportDir.h
+        src/messages/MExportDirAck.h
+        src/messages/MExportDirCancel.h
+        src/messages/MExportDirDiscover.h
+        src/messages/MExportDirDiscoverAck.h
+        src/messages/MExportDirFinish.h
+        src/messages/MExportDirNotify.h
+        src/messages/MExportDirNotifyAck.h
+        src/messages/MExportDirPrep.h
+        src/messages/MExportDirPrepAck.h
+        src/messages/MForward.h
+        src/messages/MGatherCaps.h
+        src/messages/MGenericMessage.h
+        src/messages/MGetPoolStats.h
+        src/messages/MGetPoolStatsReply.h
+        src/messages/MHeartbeat.h
+        src/messages/MInodeFileCaps.h
+        src/messages/MLock.h
+        src/messages/MLog.h
+        src/messages/MLogAck.h
+        src/messages/MMDSBeacon.h
+        src/messages/MMDSCacheRejoin.h
+        src/messages/MMDSFindIno.h
+        src/messages/MMDSFindInoReply.h
+        src/messages/MMDSFragmentNotify.h
+        src/messages/MMDSLoadTargets.h
+        src/messages/MMDSMap.h
+        src/messages/MMDSOpenIno.h
+        src/messages/MMDSOpenInoReply.h
+        src/messages/MMDSResolve.h
+        src/messages/MMDSResolveAck.h
+        src/messages/MMDSSlaveRequest.h
+        src/messages/MMDSTableRequest.h
+        src/messages/MMonCommand.h
+        src/messages/MMonCommandAck.h
+        src/messages/MMonElection.h
+        src/messages/MMonGetMap.h
+        src/messages/MMonGetOSDMap.h
+        src/messages/MMonGetVersion.h
+        src/messages/MMonGetVersionReply.h
+        src/messages/MMonGlobalID.h
+        src/messages/MMonHealth.h
+        src/messages/MMonJoin.h
+        src/messages/MMonMap.h
+        src/messages/MMonPaxos.h
+        src/messages/MMonProbe.h
+        src/messages/MMonQuorumService.h
+        src/messages/MMonScrub.h
+        src/messages/MMonSubscribe.h
+        src/messages/MMonSubscribeAck.h
+        src/messages/MMonSync.h
+        src/messages/MNop.h
+        src/messages/MOSDAlive.h
+        src/messages/MOSDBoot.h
+        src/messages/MOSDECSubOpRead.h
+        src/messages/MOSDECSubOpReadReply.h
+        src/messages/MOSDECSubOpWrite.h
+        src/messages/MOSDECSubOpWriteReply.h
+        src/messages/MOSDFailure.h
+        src/messages/MOSDMap.h
+        src/messages/MOSDMarkMeDown.h
+        src/messages/MOSDOp.h
+        src/messages/MOSDOpReply.h
+        src/messages/MOSDPGBackfill.h
+        src/messages/MOSDPGCreate.h
+        src/messages/MOSDPGInfo.h
+        src/messages/MOSDPGLog.h
+        src/messages/MOSDPGMissing.h
+        src/messages/MOSDPGNotify.h
+        src/messages/MOSDPGPull.h
+        src/messages/MOSDPGPush.h
+        src/messages/MOSDPGPushReply.h
+        src/messages/MOSDPGQuery.h
+        src/messages/MOSDPGRemove.h
+        src/messages/MOSDPGScan.h
+        src/messages/MOSDPGTemp.h
+        src/messages/MOSDPGTrim.h
+        src/messages/MOSDPing.h
+        src/messages/MOSDRepOp.h
+        src/messages/MOSDRepOpReply.h
+        src/messages/MOSDRepScrub.h
+        src/messages/MOSDScrub.h
+        src/messages/MOSDSubOp.h
+        src/messages/MOSDSubOpReply.h
+        src/messages/MPGStats.h
+        src/messages/MPGStatsAck.h
+        src/messages/MPing.h
+        src/messages/MPoolOp.h
+        src/messages/MPoolOpReply.h
+        src/messages/MRecoveryReserve.h
+        src/messages/MRemoveSnaps.h
+        src/messages/MRoute.h
+        src/messages/MStatfs.h
+        src/messages/MStatfsReply.h
+        src/messages/MTimeCheck.h
+        src/messages/MWatchNotify.h
+        src/messages/PaxosServiceMessage.h
+        src/mon/AuthMonitor.h
+        src/mon/ConfigKeyService.h
+        src/mon/DataHealthService.h
+        src/mon/DumplingMonCommands.h
+        src/mon/Elector.h
+        src/mon/HealthMonitor.h
+        src/mon/HealthService.h
+        src/mon/LogMonitor.h
+        src/mon/MDSMonitor.h
+        src/mon/MonCap.h
+        src/mon/MonClient.h
+        src/mon/MonCommands.h
+        src/mon/Monitor.h
+        src/mon/MonitorDBStore.h
+        src/mon/MonitorStore.h
+        src/mon/MonMap.h
+        src/mon/MonmapMonitor.h
+        src/mon/mon_types.h
+        src/mon/OSDMonitor.h
+        src/mon/Paxos.h
+        src/mon/PaxosService.h
+        src/mon/PGMap.h
+        src/mon/PGMonitor.h
+        src/mon/QuorumService.h
+        src/mon/Session.h
+        src/msg/async/AsyncConnection.h
+        src/msg/async/AsyncMessenger.h
+        src/msg/async/Event.h
+        src/msg/async/EventEpoll.h
+        src/msg/async/EventKqueue.h
+        src/msg/async/EventSelect.h
+        src/msg/async/net_handler.h
+        src/msg/Connection.h
+        src/msg/Dispatcher.h
+        src/msg/Message.h
+        src/msg/Messenger.h
+        src/msg/msg_types.h
+        src/msg/simple/Accepter.h
+        src/msg/simple/DispatchQueue.h
+        src/msg/simple/Pipe.h
+        src/msg/simple/PipeConnection.h
+        src/msg/simple/SimpleMessenger.h
+        src/msg/SimplePolicyMessenger.h
+        src/msg/xio/DispatchStrategy.h
+        src/msg/xio/FastStrategy.h
+        src/msg/xio/QueueStrategy.h
+        src/msg/xio/XioConnection.h
+        src/msg/xio/XioInSeq.h
+        src/msg/xio/XioMessenger.h
+        src/msg/xio/XioMsg.h
+        src/msg/xio/XioPool.h
+        src/msg/xio/XioPortal.h
+        src/msg/xio/XioSubmit.h
+        src/objclass/objclass.h
+        src/os/BtrfsFileStoreBackend.h
+        src/os/btrfs_ioctl.h
+        src/os/chain_xattr.h
+        src/os/CollectionIndex.h
+        src/os/DBObjectMap.h
+        src/os/FDCache.h
+        src/os/FileJournal.h
+        src/os/FileStore.h
+        src/os/FlatIndex.h
+        src/os/GenericFileStoreBackend.h
+        src/os/GenericObjectMap.h
+        src/os/HashIndex.h
+        src/os/IndexManager.h
+        src/os/Journal.h
+        src/os/JournalingObjectStore.h
+        src/os/KeyValueDB.h
+        src/os/KeyValueStore.h
+        src/os/KineticStore.h
+        src/os/LevelDBStore.h
+        src/os/LFNIndex.h
+        src/os/MemStore.h
+        src/os/ObjectMap.h
+        src/os/ObjectStore.h
+        src/os/RocksDBStore.h
+        src/os/SequencerPosition.h
+        src/os/WBThrottle.h
+        src/os/XfsFileStoreBackend.h
+        src/os/ZFS.h
+        src/os/ZFSFileStoreBackend.h
+        src/osd/Ager.h
+        src/osd/ClassHandler.h
+        src/osd/ECBackend.h
+        src/osd/ECMsgTypes.h
+        src/osd/ECTransaction.h
+        src/osd/ECUtil.h
+        src/osd/HitSet.h
+        src/osd/ObjectVersioner.h
+        src/osd/OpRequest.h
+        src/osd/OSD.h
+        src/osd/OSDCap.h
+        src/osd/OSDMap.h
+        src/osd/osd_types.h
+        src/osd/PG.h
+        src/osd/PGBackend.h
+        src/osd/PGLog.h
+        src/osd/ReplicatedBackend.h
+        src/osd/ReplicatedPG.h
+        src/osd/SnapMapper.h
+        src/osd/TierAgentState.h
+        src/osd/Watch.h
+        src/osdc/Filer.h
+        src/osdc/Journaler.h
+        src/osdc/ObjectCacher.h
+        src/osdc/Objecter.h
+        src/osdc/Striper.h
+        src/osdc/WritebackHandler.h
+        src/perfglue/cpu_profiler.h
+        src/perfglue/heap_profiler.h
+        src/rgw/rgw_acl.h
+        src/rgw/rgw_acl_s3.h
+        src/rgw/rgw_acl_swift.h
+        src/rgw/rgw_auth_s3.h
+        src/rgw/rgw_bucket.h
+        src/rgw/rgw_cache.h
+        src/rgw/rgw_civetweb.h
+        src/rgw/rgw_civetweb_log.h
+        src/rgw/rgw_client_io.h
+        src/rgw/rgw_common.h
+        src/rgw/rgw_cors.h
+        src/rgw/rgw_cors_s3.h
+        src/rgw/rgw_cors_swift.h
+        src/rgw/rgw_fcgi.h
+        src/rgw/rgw_formats.h
+        src/rgw/rgw_gc.h
+        src/rgw/rgw_http_client.h
+        src/rgw/rgw_http_errors.h
+        src/rgw/rgw_keystone.h
+        src/rgw/rgw_loadgen.h
+        src/rgw/rgw_log.h
+        src/rgw/rgw_metadata.h
+        src/rgw/rgw_multi.h
+        src/rgw/rgw_multi_del.h
+        src/rgw/rgw_op.h
+        src/rgw/rgw_policy_s3.h
+        src/rgw/rgw_quota.h
+        src/rgw/rgw_rados.h
+        src/rgw/rgw_replica_log.h
+        src/rgw/rgw_resolve.h
+        src/rgw/rgw_rest.h
+        src/rgw/rgw_rest_admin.h
+        src/rgw/rgw_rest_bucket.h
+        src/rgw/rgw_rest_client.h
+        src/rgw/rgw_rest_config.h
+        src/rgw/rgw_rest_conn.h
+        src/rgw/rgw_rest_log.h
+        src/rgw/rgw_rest_metadata.h
+        src/rgw/rgw_rest_opstate.h
+        src/rgw/rgw_rest_replica_log.h
+        src/rgw/rgw_rest_s3.h
+        src/rgw/rgw_rest_swift.h
+        src/rgw/rgw_rest_usage.h
+        src/rgw/rgw_rest_user.h
+        src/rgw/rgw_string.h
+        src/rgw/rgw_swift.h
+        src/rgw/rgw_swift_auth.h
+        src/rgw/rgw_tools.h
+        src/rgw/rgw_usage.h
+        src/rgw/rgw_user.h
+        src/rgw/rgw_xml.h
+        src/test/bench/backend.h
+        src/test/bench/bencher.h
+        src/test/bench/detailed_stat_collector.h
+        src/test/bench/distribution.h
+        src/test/bench/dumb_backend.h
+        src/test/bench/rados_backend.h
+        src/test/bench/rbd_backend.h
+        src/test/bench/stat_collector.h
+        src/test/bench/testfilestore_backend.h
+        src/test/common/ObjectContents.h
+        src/test/encoding/types.h
+        src/test/erasure-code/ceph_erasure_code_benchmark.h
+        src/test/erasure-code/ErasureCodeExample.h
+        src/test/kv_store_bench.h
+        src/test/librados/test.h
+        src/test/librados/TestCase.h
+        src/test/libradosstriper/TestCase.h
+        src/test/librados_test_stub/TestClassHandler.h
+        src/test/librados_test_stub/TestIoCtxImpl.h
+        src/test/librados_test_stub/TestMemIoCtxImpl.h
+        src/test/librados_test_stub/TestMemRadosClient.h
+        src/test/librados_test_stub/TestRadosClient.h
+        src/test/librados_test_stub/TestWatchNotify.h
+        src/test/librbd/test_fixture.h
+        src/test/messenger/message_helper.h
+        src/test/messenger/simple_dispatcher.h
+        src/test/messenger/xio_dispatcher.h
+        src/test/ObjectMap/KeyValueDBMemory.h
+        src/test/objectstore/DeterministicOpSequence.h
+        src/test/objectstore/FileStoreDiff.h
+        src/test/objectstore/FileStoreTracker.h
+        src/test/objectstore/TestObjectStoreState.h
+        src/test/objectstore/workload_generator.h
+        src/test/omap_bench.h
+        src/test/osd/Object.h
+        src/test/osd/RadosModel.h
+        src/test/osd/TestOpStat.h
+        src/test/osdc/FakeWriteback.h
+        src/test/system/cross_process_sem.h
+        src/test/system/st_rados_create_pool.h
+        src/test/system/st_rados_delete_objs.h
+        src/test/system/st_rados_delete_pool.h
+        src/test/system/st_rados_list_objects.h
+        src/test/system/st_rados_notify.h
+        src/test/system/st_rados_watch.h
+        src/test/system/systest_runnable.h
+        src/test/system/systest_settings.h
+        src/test/unit.h
+        src/tools/cephfs/Dumper.h
+        src/tools/cephfs/EventOutput.h
+        src/tools/cephfs/JournalFilter.h
+        src/tools/cephfs/JournalScanner.h
+        src/tools/cephfs/JournalTool.h
+        src/tools/cephfs/MDSUtility.h
+        src/tools/cephfs/Resetter.h
+        src/tools/cephfs/TableTool.h
+        src/tools/rados/rados_sync.h
+        src/tracing/tracing-common.h
+        examples/librados/hello_world_c.c
+        qa/btrfs/clone_range.c
+        qa/btrfs/create_async_snap.c
+        qa/btrfs/test_async_snap.c
+        qa/btrfs/test_rmdir_async_snap.c
+        qa/libceph/trivial_libceph.c
+        qa/workunits/direct_io/direct_io_test.c
+        qa/workunits/direct_io/test_short_dio_read.c
+        qa/workunits/direct_io/test_sync_io.c
+        qa/workunits/fs/test_o_trunc.c
+        src/arch/arm.c
+        src/arch/intel.c
+        src/btrfs_ioc_test.c
+        src/ceph_ver.c
+        src/client/test_ioctls.c
+        src/common/addr_parsing.c
+        src/common/armor.c
+        src/common/crc32c_intel_baseline.c
+        src/common/crc32c_intel_fast.c
+        src/common/escape.c
+        src/common/linux_version.c
+        src/common/mime.c
+        src/common/module.c
+        src/common/pipe.c
+        src/common/safe_io.c
+        src/common/sctp_crc32.c
+        src/common/secret.c
+        src/common/utf8.c
+        src/common/xattr.c
+        src/crush/builder.c
+        src/crush/crush.c
+        src/crush/hash.c
+        src/crush/mapper.c
+        src/erasure-code/isa/isa-l/erasure_code/ec_base.c
+        src/erasure-code/isa/isa-l/erasure_code/ec_highlevel_func.c
+        src/erasure-code/shec/determinant.c
+        src/mds/locks.c
+        src/mount/canonicalize.c
+        src/mount/mount.ceph.c
+        src/mount/mtab.c
+        src/my_source/rbd_client.c
+        src/my_source/test-rbd.c
+        src/test/fsx.c
+        src/test/gprof-helper.c
+        src/test/librbd/fsx.c
+        src/test/old/test_seek_read.c
+        src/test/old/test_setlayout.c
+        src/test/old/test_short_seek_read.c
+        src/test/test_c_headers.c
+        src/tools/scratchtool.c
+        examples/librados/hello_world.cc
+        fusetrace/fusetrace_ll.cc
+        src/arch/probe.cc
+        src/auth/AuthAuthorizeHandler.cc
+        src/auth/AuthClientHandler.cc
+        src/auth/AuthMethodList.cc
+        src/auth/AuthServiceHandler.cc
+        src/auth/AuthSessionHandler.cc
+        src/auth/cephx/CephxAuthorizeHandler.cc
+        src/auth/cephx/CephxClientHandler.cc
+        src/auth/cephx/CephxKeyServer.cc
+        src/auth/cephx/CephxProtocol.cc
+        src/auth/cephx/CephxServiceHandler.cc
+        src/auth/cephx/CephxSessionHandler.cc
+        src/auth/Crypto.cc
+        src/auth/KeyRing.cc
+        src/auth/none/AuthNoneAuthorizeHandler.cc
+        src/auth/RotatingKeyRing.cc
+        src/auth/unknown/AuthUnknownAuthorizeHandler.cc
+        src/cephfs.cc
+        src/ceph_fuse.cc
+        src/ceph_mds.cc
+        src/ceph_mon.cc
+        src/ceph_osd.cc
+        src/ceph_syn.cc
+        src/client/barrier.cc
+        src/client/Client.cc
+        src/client/ClientSnapRealm.cc
+        src/client/Dentry.cc
+        src/client/fuse_ll.cc
+        src/client/hypertable/CephBroker.cc
+        src/client/Inode.cc
+        src/client/MetaRequest.cc
+        src/client/MetaSession.cc
+        src/client/SyntheticClient.cc
+        src/client/Trace.cc
+        src/cls/hello/cls_hello.cc
+        src/cls/lock/cls_lock.cc
+        src/cls/lock/cls_lock_client.cc
+        src/cls/lock/cls_lock_ops.cc
+        src/cls/lock/cls_lock_types.cc
+        src/cls/log/cls_log.cc
+        src/cls/log/cls_log_client.cc
+        src/cls/rbd/cls_rbd.cc
+        src/cls/rbd/cls_rbd_client.cc
+        src/cls/refcount/cls_refcount.cc
+        src/cls/refcount/cls_refcount_client.cc
+        src/cls/refcount/cls_refcount_ops.cc
+        src/cls/replica_log/cls_replica_log.cc
+        src/cls/replica_log/cls_replica_log_client.cc
+        src/cls/replica_log/cls_replica_log_ops.cc
+        src/cls/replica_log/cls_replica_log_types.cc
+        src/cls/rgw/cls_rgw.cc
+        src/cls/rgw/cls_rgw_client.cc
+        src/cls/rgw/cls_rgw_ops.cc
+        src/cls/rgw/cls_rgw_types.cc
+        src/cls/statelog/cls_statelog.cc
+        src/cls/statelog/cls_statelog_client.cc
+        src/cls/user/cls_user.cc
+        src/cls/user/cls_user_client.cc
+        src/cls/user/cls_user_ops.cc
+        src/cls/user/cls_user_types.cc
+        src/cls/version/cls_version.cc
+        src/cls/version/cls_version_client.cc
+        src/cls/version/cls_version_types.cc
+        src/cls_acl.cc
+        src/cls_crypto.cc
+        src/common/address_helper.cc
+        src/common/admin_socket.cc
+        src/common/admin_socket_client.cc
+        src/common/assert.cc
+        src/common/BackTrace.cc
+        src/common/blkdev.cc
+        src/common/bloom_filter.cc
+        src/common/buffer.cc
+        src/common/ceph_argparse.cc
+        src/common/ceph_context.cc
+        src/common/ceph_crypto.cc
+        src/common/ceph_crypto_cms.cc
+        src/common/ceph_frag.cc
+        src/common/ceph_fs.cc
+        src/common/ceph_hash.cc
+        src/common/ceph_json.cc
+        src/common/ceph_strings.cc
+        src/common/Clock.cc
+        src/common/cmdparse.cc
+        src/common/code_environment.cc
+        src/common/common_init.cc
+        src/common/config.cc
+        src/common/ConfUtils.cc
+        src/common/ContextCompletion.cc
+        src/common/crc32c.cc
+        src/common/Cycles.cc
+        src/common/DecayCounter.cc
+        src/common/dout.cc
+        src/common/dummy.cc
+        src/common/entity_name.cc
+        src/common/environment.cc
+        src/common/errno.cc
+        src/common/fd.cc
+        src/common/Finisher.cc
+        src/common/Formatter.cc
+        src/common/HeartbeatMap.cc
+        src/common/hex.cc
+        src/common/histogram.cc
+        src/common/hobject.cc
+        src/common/io_priority.cc
+        src/common/ipaddr.cc
+        src/common/lockdep.cc
+        src/common/LogClient.cc
+        src/common/LogEntry.cc
+        src/common/MemoryModel.cc
+        src/common/Mutex.cc
+        src/common/obj_bencher.cc
+        src/common/OutputDataSocket.cc
+        src/common/page.cc
+        src/common/perf_counters.cc
+        src/common/pick_address.cc
+        src/common/PrebufferedStreambuf.cc
+        src/common/Readahead.cc
+        src/common/RefCountedObj.cc
+        src/common/run_cmd.cc
+        src/common/signal.cc
+        src/common/simple_spin.cc
+        src/common/SloppyCRCMap.cc
+        src/common/snap_types.cc
+        src/common/strtol.cc
+        src/common/str_list.cc
+        src/common/str_map.cc
+        src/common/TextTable.cc
+        src/common/Thread.cc
+        src/common/Throttle.cc
+        src/common/Timer.cc
+        src/common/TrackedOp.cc
+        src/common/types.cc
+        src/common/util.cc
+        src/common/version.cc
+        src/common/WorkQueue.cc
+        src/crush/CrushCompiler.cc
+        src/crush/CrushTester.cc
+        src/crush/CrushWrapper.cc
+        src/erasure-code/ErasureCode.cc
+        src/erasure-code/ErasureCodePlugin.cc
+        src/erasure-code/ErasureCodePluginIsa.cc
+        src/erasure-code/isa/ErasureCodeIsa.cc
+        src/erasure-code/isa/ErasureCodeIsaTableCache.cc
+        src/erasure-code/isa/ErasureCodePluginIsa.cc
+        src/erasure-code/isa/xor_op.cc
+        src/erasure-code/jerasure/ErasureCodeJerasure.cc
+        src/erasure-code/jerasure/ErasureCodePluginJerasure.cc
+        src/erasure-code/jerasure/ErasureCodePluginSelectJerasure.cc
+        src/erasure-code/lrc/ErasureCodeLrc.cc
+        src/erasure-code/lrc/ErasureCodePluginLrc.cc
+        src/erasure-code/shec/ErasureCodePluginShec.cc
+        src/erasure-code/shec/ErasureCodeShec.cc
+        src/erasure-code/shec/ErasureCodeShecTableCache.cc
+        src/erasure-code/shec/shec.cc
+        src/global/global_context.cc
+        src/global/global_init.cc
+        src/global/pidfile.cc
+        src/global/signal_handler.cc
+        src/java/native/libcephfs_jni.cc
+        src/key_value_store/cls_kvs.cc
+        src/key_value_store/kv_flat_btree_async.cc
+        src/krbd.cc
+        src/libcephfs.cc
+        src/librados/IoCtxImpl.cc
+        src/librados/librados.cc
+        src/librados/RadosClient.cc
+        src/librados/RadosXattrIter.cc
+        src/librados/snap_set_diff.cc
+        src/librados-config.cc
+        src/libradosstriper/libradosstriper.cc
+        src/libradosstriper/MultiAioCompletionImpl.cc
+        src/libradosstriper/RadosStriperImpl.cc
+        src/librbd/AioCompletion.cc
+        src/librbd/AioRequest.cc
+        src/librbd/AsyncFlattenRequest.cc
+        src/librbd/AsyncObjectThrottle.cc
+        src/librbd/AsyncOperation.cc
+        src/librbd/AsyncRequest.cc
+        src/librbd/AsyncResizeRequest.cc
+        src/librbd/AsyncTrimRequest.cc
+        src/librbd/CopyupRequest.cc
+        src/librbd/ImageCtx.cc
+        src/librbd/ImageWatcher.cc
+        src/librbd/internal.cc
+        src/librbd/librbd.cc
+        src/librbd/LibrbdWriteback.cc
+        src/librbd/ObjectMap.cc
+        src/librbd/WatchNotifyTypes.cc
+        src/log/Log.cc
+        src/log/SubsystemMap.cc
+        src/log/test.cc
+        src/mds/Beacon.cc
+        src/mds/Capability.cc
+        src/mds/CDentry.cc
+        src/mds/CDir.cc
+        src/mds/CInode.cc
+        src/mds/flock.cc
+        src/mds/inode_backtrace.cc
+        src/mds/InoTable.cc
+        src/mds/journal.cc
+        src/mds/JournalPointer.cc
+        src/mds/Locker.cc
+        src/mds/LogEvent.cc
+        src/mds/MDBalancer.cc
+        src/mds/MDCache.cc
+        src/mds/MDLog.cc
+        src/mds/MDS.cc
+        src/mds/MDSAuthCaps.cc
+        src/mds/MDSContext.cc
+        src/mds/MDSMap.cc
+        src/mds/MDSTable.cc
+        src/mds/MDSTableClient.cc
+        src/mds/MDSTableServer.cc
+        src/mds/mdstypes.cc
+        src/mds/Migrator.cc
+        src/mds/Mutation.cc
+        src/mds/RecoveryQueue.cc
+        src/mds/Server.cc
+        src/mds/SessionMap.cc
+        src/mds/snap.cc
+        src/mds/SnapRealm.cc
+        src/mds/SnapServer.cc
+        src/mon/AuthMonitor.cc
+        src/mon/ConfigKeyService.cc
+        src/mon/DataHealthService.cc
+        src/mon/Elector.cc
+        src/mon/HealthMonitor.cc
+        src/mon/LogMonitor.cc
+        src/mon/MDSMonitor.cc
+        src/mon/MonCap.cc
+        src/mon/MonClient.cc
+        src/mon/Monitor.cc
+        src/mon/MonitorStore.cc
+        src/mon/MonMap.cc
+        src/mon/MonmapMonitor.cc
+        src/mon/OSDMonitor.cc
+        src/mon/Paxos.cc
+        src/mon/PaxosService.cc
+        src/mon/PGMap.cc
+        src/mon/PGMonitor.cc
+        src/msg/async/AsyncConnection.cc
+        src/msg/async/AsyncMessenger.cc
+        src/msg/async/Event.cc
+        src/msg/async/EventEpoll.cc
+        src/msg/async/EventKqueue.cc
+        src/msg/async/EventSelect.cc
+        src/msg/async/net_handler.cc
+        src/msg/Message.cc
+        src/msg/Messenger.cc
+        src/msg/msg_types.cc
+        src/msg/simple/Accepter.cc
+        src/msg/simple/DispatchQueue.cc
+        src/msg/simple/Pipe.cc
+        src/msg/simple/PipeConnection.cc
+        src/msg/simple/SimpleMessenger.cc
+        src/msg/xio/QueueStrategy.cc
+        src/msg/xio/XioConnection.cc
+        src/msg/xio/XioMessenger.cc
+        src/msg/xio/XioMsg.cc
+        src/msg/xio/XioPool.cc
+        src/msg/xio/XioPortal.cc
+        src/objclass/class_api.cc
+        src/os/BtrfsFileStoreBackend.cc
+        src/os/chain_xattr.cc
+        src/os/DBObjectMap.cc
+        src/os/FileJournal.cc
+        src/os/FileStore.cc
+        src/os/FlatIndex.cc
+        src/os/GenericFileStoreBackend.cc
+        src/os/GenericObjectMap.cc
+        src/os/HashIndex.cc
+        src/os/IndexManager.cc
+        src/os/JournalingObjectStore.cc
+        src/os/KeyValueDB.cc
+        src/os/KeyValueStore.cc
+        src/os/KineticStore.cc
+        src/os/LevelDBStore.cc
+        src/os/LFNIndex.cc
+        src/os/MemStore.cc
+        src/os/ObjectStore.cc
+        src/os/RocksDBStore.cc
+        src/os/Transaction.cc
+        src/os/WBThrottle.cc
+        src/os/XfsFileStoreBackend.cc
+        src/os/ZFS.cc
+        src/os/ZFSFileStoreBackend.cc
+        src/osd/Ager.cc
+        src/osd/ClassHandler.cc
+        src/osd/ECBackend.cc
+        src/osd/ECMsgTypes.cc
+        src/osd/ECTransaction.cc
+        src/osd/ECUtil.cc
+        src/osd/HitSet.cc
+        src/osd/OpRequest.cc
+        src/osd/OSD.cc
+        src/osd/OSDCap.cc
+        src/osd/OSDMap.cc
+        src/osd/osd_types.cc
+        src/osd/PG.cc
+        src/osd/PGBackend.cc
+        src/osd/PGLog.cc
+        src/osd/ReplicatedBackend.cc
+        src/osd/ReplicatedPG.cc
+        src/osd/SnapMapper.cc
+        src/osd/Watch.cc
+        src/osdc/Filer.cc
+        src/osdc/Journaler.cc
+        src/osdc/ObjectCacher.cc
+        src/osdc/Objecter.cc
+        src/osdc/Striper.cc
+        src/perfglue/cpu_profiler.cc
+        src/perfglue/disabled_heap_profiler.cc
+        src/perfglue/disabled_stubs.cc
+        src/perfglue/heap_profiler.cc
+        src/rbd.cc
+        src/rbd_fuse/rbd-fuse.cc
+        src/rbd_replay/actions.cc
+        src/rbd_replay/Deser.cc
+        src/rbd_replay/ImageNameMap.cc
+        src/rbd_replay/ios.cc
+        src/rbd_replay/PendingIO.cc
+        src/rbd_replay/rbd-replay-prep.cc
+        src/rbd_replay/rbd-replay.cc
+        src/rbd_replay/rbd_loc.cc
+        src/rbd_replay/Replayer.cc
+        src/rbd_replay/Ser.cc
+        src/rgw/librgw.cc
+        src/rgw/rgw_acl.cc
+        src/rgw/rgw_aclparser.cc
+        src/rgw/rgw_acl_s3.cc
+        src/rgw/rgw_acl_swift.cc
+        src/rgw/rgw_admin.cc
+        src/rgw/rgw_auth_s3.cc
+        src/rgw/rgw_bucket.cc
+        src/rgw/rgw_cache.cc
+        src/rgw/rgw_civetweb.cc
+        src/rgw/rgw_civetweb_log.cc
+        src/rgw/rgw_client_io.cc
+        src/rgw/rgw_common.cc
+        src/rgw/rgw_cors.cc
+        src/rgw/rgw_cors_s3.cc
+        src/rgw/rgw_dencoder.cc
+        src/rgw/rgw_env.cc
+        src/rgw/rgw_fcgi.cc
+        src/rgw/rgw_formats.cc
+        src/rgw/rgw_gc.cc
+        src/rgw/rgw_http_client.cc
+        src/rgw/rgw_jsonparser.cc
+        src/rgw/rgw_json_enc.cc
+        src/rgw/rgw_keystone.cc
+        src/rgw/rgw_loadgen.cc
+        src/rgw/rgw_log.cc
+        src/rgw/rgw_main.cc
+        src/rgw/rgw_metadata.cc
+        src/rgw/rgw_multi.cc
+        src/rgw/rgw_multiparser.cc
+        src/rgw/rgw_multi_del.cc
+        src/rgw/rgw_op.cc
+        src/rgw/rgw_policy_s3.cc
+        src/rgw/rgw_quota.cc
+        src/rgw/rgw_rados.cc
+        src/rgw/rgw_replica_log.cc
+        src/rgw/rgw_resolve.cc
+        src/rgw/rgw_rest.cc
+        src/rgw/rgw_rest_bucket.cc
+        src/rgw/rgw_rest_client.cc
+        src/rgw/rgw_rest_config.cc
+        src/rgw/rgw_rest_conn.cc
+        src/rgw/rgw_rest_log.cc
+        src/rgw/rgw_rest_metadata.cc
+        src/rgw/rgw_rest_opstate.cc
+        src/rgw/rgw_rest_replica_log.cc
+        src/rgw/rgw_rest_s3.cc
+        src/rgw/rgw_rest_swift.cc
+        src/rgw/rgw_rest_usage.cc
+        src/rgw/rgw_rest_user.cc
+        src/rgw/rgw_swift.cc
+        src/rgw/rgw_swift_auth.cc
+        src/rgw/rgw_tools.cc
+        src/rgw/rgw_usage.cc
+        src/rgw/rgw_user.cc
+        src/rgw/rgw_xml.cc
+        src/tools/ceph-client-debug.cc
+        src/tools/cephfs/cephfs-journal-tool.cc
+        src/tools/cephfs/cephfs-table-tool.cc
+        src/tools/cephfs/Dumper.cc
+        src/tools/cephfs/EventOutput.cc
+        src/tools/cephfs/JournalFilter.cc
+        src/tools/cephfs/JournalScanner.cc
+        src/tools/cephfs/JournalTool.cc
+        src/tools/cephfs/MDSUtility.cc
+        src/tools/cephfs/Resetter.cc
+        src/tools/cephfs/TableTool.cc
+        src/tools/ceph_authtool.cc
+        src/tools/ceph_conf.cc
+        src/tools/ceph_kvstore_tool.cc
+        src/tools/ceph_monstore_tool.cc
+        src/tools/ceph_objectstore_tool.cc
+        src/tools/ceph_osdomap_tool.cc
+        src/tools/crushtool.cc
+        src/tools/monmaptool.cc
+        src/tools/osdmaptool.cc
+        src/tools/psim.cc
+        src/tools/rados/rados.cc
+        src/tools/rados/rados_export.cc
+        src/tools/rados/rados_import.cc
+        src/tools/rados/rados_sync.cc
+        src/tools/radosacl.cc
+        src/tools/rest_bench.cc
+        src/tools/scratchtoolpp.cc
 
-link_directories(
-  ${OFED_PREFIX}/lib
-  ${LEVELDB_PREFIX}/lib
-)
-
-#Check Includes
-include(CheckIncludeFiles)
-include(CheckIncludeFileCXX)
-include(CheckFunctionExists)
-
-CHECK_FUNCTION_EXISTS(fallocate CEPH_HAVE_FALLOCATE)
-CHECK_FUNCTION_EXISTS(posix_fadvise HAVE_POSIX_FADVISE)
-CHECK_FUNCTION_EXISTS(posix_fallocate HAVE_POSIX_FALLOCATE)
-CHECK_FUNCTION_EXISTS(syncfs HAVE_SYS_SYNCFS) 
-CHECK_FUNCTION_EXISTS(sync_file_range HAVE_SYNC_FILE_RANGE)
-CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
-CHECK_INCLUDE_FILES("boost/random/discrete_distribution.hpp" HAVE_BOOST_RANDOM_DISCRETE_DISTRIBUTION)
-CHECK_INCLUDE_FILES("dirent.h" HAVE_DIRENT_H)
-CHECK_INCLUDE_FILES("dlfcn.h" HAVE_DLFCN_H)
-CHECK_INCLUDE_FILES("inttypes.h" HAVE_INTTYPES_H)
-CHECK_INCLUDE_FILES("linux/types.h" HAVE_LINUX_TYPES_H)
-CHECK_INCLUDE_FILES("leveldb/filter_policy.h" HAVE_LEVELDB_FILTER_POLICY)
-CHECK_INCLUDE_FILES("memory.h" HAVE_MEMORY_H)
-CHECK_INCLUDE_FILES("ndir.h" HAVE_NDIR_H)
-CHECK_INCLUDE_FILES("netdb.h" HAVE_NETDB_H)
-CHECK_INCLUDE_FILES("netinet/in.h" HAVE_NETINET_IN_H)
-CHECK_INCLUDE_FILES("stdint.h" HAVE_STDINT_H)
-CHECK_INCLUDE_FILES("stdlib.h" HAVE_STDLIB_H)
-CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
-CHECK_INCLUDE_FILES("strings.h" HAVE_STRINGS_H)
-CHECK_INCLUDE_FILES("string.h" HAVE_STRING_H)
-CHECK_INCLUDE_FILES("syslog.h" HAVE_SYSLOG_H)
-CHECK_INCLUDE_FILES("sys/dir.h" HAVE_SYS_DIR_H)
-CHECK_INCLUDE_FILES("sys/file.h" HAVE_SYS_FILE_H)
-CHECK_INCLUDE_FILES("sys/ioctl.h" HAVE_SYS_IOCTL_H)
-CHECK_INCLUDE_FILES("sys/mount.h" HAVE_SYS_MOUNT_H)
-CHECK_INCLUDE_FILES("sys/ndir.h" HAVE_SYS_NDIR_H)
-CHECK_INCLUDE_FILES("sys/param.h" HAVE_SYS_PARAM_H)
-CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
-CHECK_INCLUDE_FILES("sys/statvfs.h" HAVE_SYS_STATVFS_H)
-CHECK_INCLUDE_FILES("sys/stat.h" HAVE_SYS_STAT_H)
-CHECK_INCLUDE_FILES("sys/time.h" HAVE_SYS_TIME_H)
-CHECK_INCLUDE_FILES("sys/types.h" HAVE_SYS_TYPES_H)
-CHECK_INCLUDE_FILES("sys/vfs.h" HAVE_SYS_VFS_H)
-CHECK_INCLUDE_FILES("sys/wait.h" HAVE_SYS_WAIT_H)
-CHECK_INCLUDE_FILES("sys/xattr.h" HAVE_SYS_XATTR_H)
-CHECK_INCLUDE_FILES("unistd.h" HAVE_UNISTD_H)
-CHECK_INCLUDE_FILES("utime.h" HAVE_UTIME_H)
-CHECK_INCLUDE_FILES("${CMAKE_SOURCE_DIR}/src/include/fiemap.h" HAVE_FIEMAP_H)
-CHECK_INCLUDE_FILES("expat.h" HAVE_EXPAT_H)
-CHECK_INCLUDE_FILES("fuse/fuse_lowlevel.h" HAVE_FUSE_LOWLEVEL_H)
-CHECK_INCLUDE_FILES("curl/curl.h" HAVE_FUSE_LOWLEVEL_H)
-CHECK_INCLUDE_FILES("fuse/fuse.h" HAVE_FUSE_H)
-CHECK_INCLUDE_FILES("google/profiler.h" HAVE_PROFILER_H)
-CHECK_INCLUDE_FILES("libedit/vis.h" HAVE_LIBEDIT_VIS_H)
-CHECK_INCLUDE_FILES("fcgi_config.h"  HAVE_FASTCGI_CONFIG_H)
-CHECK_INCLUDE_FILES("fastcgi.h" HAVE_FASTCGI_H)
-CHECK_INCLUDE_FILES("fcgiapp.h" FASTCGI_FASTCGI_APP_DIR)
-CHECK_INCLUDE_FILES("fcgimisc.h" HAVE_FASTCGI_MISC_H)
-CHECK_INCLUDE_FILES("fcgio.h" HAVE_FASTCGIO_H)
-CHECK_INCLUDE_FILES("fcgios.h" FASTCGI_FASTCGIOS_DIR)
-CHECK_INCLUDE_FILES("fcgi_stdio.h" HAVE_FASTCGI_STDIO_H)
-CHECK_INCLUDE_FILES("openssl/ssl.h" HAVE_SSL_H)
-CHECK_INCLUDE_FILES("snappy.h" HAVE_SNAPPY_H)
-CHECK_INCLUDE_FILES("uuid/uuid.h" HAVE_UUID_H)
-CHECK_INCLUDE_FILES("atomic_ops.h" HAVE_ATOMIC_OPS)
-CHECK_INCLUDE_FILES("keyutils.h" HAVE_KEYUTILS_H)
-
-include(CheckSymbolExists)
-CHECK_SYMBOL_EXISTS(__u8 "sys/types.h;linux/types.h" HAVE___U8)
-CHECK_SYMBOL_EXISTS(__u64 "sys/types.h;linux/types.h" HAVE___U64)
-CHECK_SYMBOL_EXISTS(__s64 "sys/types.h;linux/types.h" HAVE___S64)
-
-set(CEPH_MAN_DIR "share/man" CACHE STRING "Install location for man pages (relative to prefix).")
-
-option(ENABLE_SHARED "build shared libraries" ON)
-if(${ENABLE_SHARED})
- set(CEPH_SHARED SHARED)
-else(${ENABLE_SHARED})
- set(CEPH_SHARED STATIC)
-endif(${ENABLE_SHARED})
-
-find_package(udev REQUIRED)
-set(HAVE_UDEV ${UDEV_FOUND})
-message(STATUS "${UDEV_LIBS}")
-
-option(WITH_AIO "AIO is here ON" ON)
-if(${WITH_AIO})
-find_package(aio REQUIRED)
-set(HAVE_LIBAIO ${AIO_FOUND})
-message(STATUS "${AIO_LIBS}")
-endif(${WITH_AIO})
-
-option(WITH_FUSE "Fuse is here" ON)
-if(${WITH_FUSE})
-find_package(fuse REQUIRED)
-set(HAVE_LIBFUSE ${FUSE_FOUND})
-CHECK_FUNCTION_EXISTS(fuse_getgroups HAVE_FUSE_GETGROUPS)
-endif(${WITH_FUSE})
-
-# probably fuse etc need this -- how to check? XXX
-option(WITH_MDS "MDS is here" ON)
-
-# needs mds and? XXX
-option(WITH_CLIENT "Client is here" ON)
-option(WITH_LIBCEPHFS "libcephfs client library" ON)
-
-# key-value store
-option(WITH_KVS "Key value store is here" ON)
-
-# remote block storage
-option(WITH_RBD "Remote block storage is here" ON)
-if(${WITH_RBD})
-find_package(blkid REQUIRED)
-set(HAVE_LIBBLKID ${BLKID_FOUND})
-endif(${WITH_RBD})
-
-option(WITH_LEVELDB "LevelDB is here" ON)
-if(${WITH_LEVELDB})
-find_package(leveldb REQUIRED)
-set(HAVE_LIBLEVELDB ${LEVELDB_FOUND})
-CHECK_INCLUDE_FILES("leveldb/filter_policy.h" HAVE_LEVELDB_FILTER_POLICY)
-endif(${WITH_LEVELDB})
-
-option(WITH_EXPAT "EXPAT is here" ON)
-if(${WITH_EXPAT})
-find_package(expat REQUIRED)
-set(HAVE_EXPAT ${EXPAT_FOUND})
-endif(${WITH_EXPAT})
-
-option(WITH_FCGI "FCGI is here" ON)
-if(${WITH_FCGI})
-find_package(fcgi REQUIRED)
-set(HAVE_FCGI ${FCGI_FOUND})
-endif(${WITH_FCGI})
-
-option(WITH_ATOMICS_OPS "Atomic Ops is here" ON)
-if(${WITH_ATOMIC_OPS})
-find_package(atomic_ops REQUIRED)
-set(HAVE_ATOMIC_OPS ${ATOMIC_OPS_FOUND})
-endif(${WITH_ATOMIC_OPS})
-
-option(WITH_PROFILER "The Profiler is here" ON)
-if(${WITH_PROFILER})
-find_package(profiler REQUIRED)
-set(HAVE_PROFILER ${PROFILER_FOUND})
-endif(${WITH_PROFILER})
-
-option(WITH_SNAPPY "Snappy is here" ON)
-if(${WITH_SNAPPY})
-find_package(snappy REQUIRED)
-set(HAVE_LIBSNAPPY ${SNAPPY_FOUND})
-endif(${WITH_SNAPPY})
-
-option(WITH_TCMALLOC "Use TCMalloc as Allocator" ON)
-if(${WITH_TCMALLOC})
-find_package(tcmalloc REQUIRED)
-set(HAVE_LIBTCMALLOC ${Tcmalloc_FOUND})
-endif(${WITH_TCMALLOC})
-
-option(USE_CRYPTOPP "Cryptopp is ON" ON)
-find_package(cryptopp)
-if(CRYPTOPP_FOUND)
-        MESSAGE(STATUS "${CRYPTOPP_LIBRARIES}")
-        set(CRYPTO_LIBS ${CRYPTOPP_LIBRARIES})
-        set(USE_NSS 0)
-else()
-        MESSAGE(STATUS "Cryptopp not here using NSS instead")
-        set(USE_NSS 1)
-	MESSAGE(STATUS "${NSS_LIBRARIES}")
-        find_package(NSS)
-        if(NSS_FOUND)
-                MESSAGE(STATUS "${NSS_LIBRARIES}")
-                #It is known to be false why the test
-		if(NOT CRYPTOPP_FOUND)
-                        set(CRYPTO_LIBS ${NSS_LIBRARIES})
-                        add_definitions(-DUSE_NSS)
-		endif(NOT CRYPTOPP_FOUND)
-	endif(NSS_FOUND)
-endif(CRYPTOPP_FOUND)
-
-option(WITH_XIO "Enable XIO messaging" ON)
-if(WITH_XIO)
-find_package(xio)
-set(HAVE_XIO ${Xio_FOUND})
-endif(WITH_XIO)
-
-#option for RGW
-option(WITH_RADOSGW "Rados Gateway is enabled" ON)
-
-# Now create a useable config.h
-configure_file(
-  ${PROJECT_SOURCE_DIR}/src/include/config-h.in.cmake
-  ${PROJECT_BINARY_DIR}/include/acconfig.h
-)
-include_directories(${PROJECT_BINARY_DIR}/include)
-
-add_definitions(-D__linux__)
-
-if(${ENABLE_SHARED})
-  set(Boost_USE_STATIC_LIBS   OFF)
-else(${ENABLE_SHARED})
-  set(Boost_USE_STATIC_LIBS   ON)
-endif(${ENABLE_SHARED})
-
-set(Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS thread system regex REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-
-find_package(Threads REQUIRED)
-
-# find out which platform we are building on
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(LINUX ON)
-  set(UNIX ON)
-  FIND_PACKAGE(Threads)
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-# find out which platform we are building on
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-set(OperatingSystem "Mac OS X")  
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-
-add_subdirectory(src)
-add_subdirectory(man)
+        )
+add_executable(ceph ${SOURCE_FILES})
