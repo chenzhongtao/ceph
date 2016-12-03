@@ -85,7 +85,7 @@ ostream& operator<<(ostream& out, const ObjectStore::Sequencer& s)
 {
   return out << "osr(" << s.get_name() << " " << &s << ")";
 }
-
+//# 提交事务列表
 unsigned ObjectStore::apply_transactions(Sequencer *osr,
 					 list<Transaction*> &tls,
 					 Context *ondisk)

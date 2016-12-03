@@ -33,7 +33,7 @@ public:
   PerfCounters *logger;
 protected:
   Cond *do_sync_cond;
-  bool wait_on_full;
+  bool wait_on_full; //# 初始为false   filestore_journal_writeahead,设置为true
 
 public:
   Journal(uuid_d f, Finisher *fin, Cond *c=0) :

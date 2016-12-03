@@ -44,7 +44,7 @@ struct heartbeat_handle_d {
   const std::string name;
   atomic_t timeout, suicide_timeout;
   time_t grace, suicide_grace;
-  std::list<heartbeat_handle_d*>::iterator list_item;
+  std::list<heartbeat_handle_d*>::iterator list_item; //# 保存自己在HeartbeatMap::m_workers中的位置
 
   heartbeat_handle_d(const std::string& n)
     : name(n), grace(0), suicide_grace(0)
@@ -82,8 +82,8 @@ class HeartbeatMap {
   RWLock m_rwlock;
   time_t m_inject_unhealthy_until;
   std::list<heartbeat_handle_d*> m_workers;
-  atomic_t m_unhealthy_workers;
-  atomic_t m_total_workers;
+  atomic_t m_unhealthy_workers; //# 不健康worker数
+  atomic_t m_total_workers;     //# 总的worker数
 
   bool _check(const heartbeat_handle_d *h, const char *who, time_t now);
 };

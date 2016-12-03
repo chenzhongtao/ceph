@@ -19,6 +19,7 @@
 #include "Journal.h"
 #include "common/RWLock.h"
 
+//#FileStore 继承这个类
 class JournalingObjectStore : public ObjectStore {
 protected:
   Journal *journal;
@@ -27,8 +28,8 @@ protected:
 
   class SubmitManager {
     Mutex lock;
-    uint64_t op_seq;
-    uint64_t op_submitted;
+    uint64_t op_seq;      //# 日志最新的seq = op_submitted或op_submitted+1
+    uint64_t op_submitted;//# 日志已经提交的seq
   public:
     SubmitManager() :
       lock("JOS::SubmitManager::lock", false, true, false, g_ceph_context),
@@ -36,6 +37,7 @@ protected:
     {}
     uint64_t op_submit_start();
     void op_submit_finish(uint64_t op);
+    //# 设置已经提交的seq,replay时设置
     void set_op_seq(uint64_t seq) {
       Mutex::Locker l(lock);
       op_submitted = op_seq = seq;
@@ -52,12 +54,12 @@ protected:
     Mutex apply_lock;
     bool blocked;
     Cond blocked_cond;
-    int open_ops;
+    int open_ops; //# 正在提交的op数
     uint64_t max_applied_seq;
 
     Mutex com_lock;
     map<version_t, vector<Context*> > commit_waiters;
-    uint64_t committing_seq, committed_seq;
+    uint64_t committing_seq, committed_seq;//# 这是提交写磁盘的
 
   public:
     ApplyManager(Journal *&j, Finisher &f) :
@@ -68,6 +70,7 @@ protected:
       max_applied_seq(0),
       com_lock("JOS::ApplyManager::com_lock", false, true, false, g_ceph_context),
       committing_seq(0), committed_seq(0) {}
+      //# 重新设置
     void reset() {
       assert(open_ops == 0);
       assert(blocked == false);
@@ -93,6 +96,7 @@ protected:
       Mutex::Locker l(com_lock);
       return committing_seq;
     }
+    //# 初始化以提交的seq
     void init_seq(uint64_t fs_op_seq) {
       {
 	Mutex::Locker l(com_lock);

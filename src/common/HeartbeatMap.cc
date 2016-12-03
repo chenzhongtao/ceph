@@ -43,6 +43,7 @@ HeartbeatMap::~HeartbeatMap()
   assert(m_workers.empty());
 }
 
+//# 添加一个worker
 heartbeat_handle_d *HeartbeatMap::add_worker(const string& name)
 {
   m_rwlock.get_write();
@@ -54,6 +55,7 @@ heartbeat_handle_d *HeartbeatMap::add_worker(const string& name)
   return h;
 }
 
+//# 移除一个worker
 void HeartbeatMap::remove_worker(const heartbeat_handle_d *h)
 {
   m_rwlock.get_write();
@@ -62,7 +64,7 @@ void HeartbeatMap::remove_worker(const heartbeat_handle_d *h)
   m_rwlock.put_write();
   delete h;
 }
-
+//# 检测是否超时
 bool HeartbeatMap::_check(const heartbeat_handle_d *h, const char *who, time_t now)
 {
   bool healthy = true;
@@ -82,7 +84,7 @@ bool HeartbeatMap::_check(const heartbeat_handle_d *h, const char *who, time_t n
   }
   return healthy;
 }
-
+//# 重置超时时间,重置前有check之前有没超时
 void HeartbeatMap::reset_timeout(heartbeat_handle_d *h, time_t grace, time_t suicide_grace)
 {
   ldout(m_cct, 20) << "reset_timeout '" << h->name << "' grace " << grace
@@ -100,6 +102,7 @@ void HeartbeatMap::reset_timeout(heartbeat_handle_d *h, time_t grace, time_t sui
   h->suicide_grace = suicide_grace;
 }
 
+//# 清除设置超时时间,清除前有check之前有没超时
 void HeartbeatMap::clear_timeout(heartbeat_handle_d *h)
 {
   ldout(m_cct, 20) << "clear_timeout '" << h->name << "'" << dendl;
@@ -108,21 +111,21 @@ void HeartbeatMap::clear_timeout(heartbeat_handle_d *h)
   h->timeout.set(0);
   h->suicide_timeout.set(0);
 }
-
+//# 检查所有worker
 bool HeartbeatMap::is_healthy()
 {
   int unhealthy = 0;
   int total = 0;
   m_rwlock.get_read();
   time_t now = time(NULL);
-  if (m_cct->_conf->heartbeat_inject_failure) {
+  if (m_cct->_conf->heartbeat_inject_failure) { //# 0
     ldout(m_cct, 0) << "is_healthy injecting failure for next " << m_cct->_conf->heartbeat_inject_failure << " seconds" << dendl;
     m_inject_unhealthy_until = now + m_cct->_conf->heartbeat_inject_failure;
     m_cct->_conf->set_val("heartbeat_inject_failure", "0");
   }
 
   bool healthy = true;
-  if (now < m_inject_unhealthy_until) {
+  if (now < m_inject_unhealthy_until) { //# 全局的,初试为0
     ldout(m_cct, 0) << "is_healthy = false, injected failure for next " << (m_inject_unhealthy_until - now) << " seconds" << dendl;
     healthy = false;
   }
@@ -147,11 +150,13 @@ bool HeartbeatMap::is_healthy()
   return healthy;
 }
 
+//# 获取不健康worker数目
 int HeartbeatMap::get_unhealthy_workers() const
 {
   return m_unhealthy_workers.read();
 }
 
+//# 获取总的worker数目
 int HeartbeatMap::get_total_workers() const
 {
   return m_total_workers.read();
@@ -160,7 +165,7 @@ int HeartbeatMap::get_total_workers() const
 void HeartbeatMap::check_touch_file()
 {
   if (is_healthy()) {
-    string path = m_cct->_conf->heartbeat_file;
+    string path = m_cct->_conf->heartbeat_file; //# ""
     if (path.length()) {
       int fd = ::open(path.c_str(), O_WRONLY|O_CREAT, 0644);
       if (fd >= 0) {

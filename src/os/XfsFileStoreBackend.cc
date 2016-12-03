@@ -105,7 +105,7 @@ int XfsFileStoreBackend::detect_features()
     goto out_close;
   }
 
-  if (g_conf->filestore_xfs_extsize) {
+  if (g_conf->filestore_xfs_extsize) { //# true
     ret = set_extsize(fd, 1U << 15); // a few pages
     if (ret) {
       ret = 0;

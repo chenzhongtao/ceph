@@ -23,7 +23,7 @@
 
 #include "common/safe_io.h"
 #include "include/compat.h"
-
+//# 返回读到的字节数，可能小于count
 ssize_t safe_read(int fd, void *buf, size_t count)
 {
 	size_t cnt = 0;
@@ -35,7 +35,7 @@ ssize_t safe_read(int fd, void *buf, size_t count)
 				// EOF
 				return cnt;
 			}
-			if (errno == EINTR)
+			if (errno == EINTR) //# 读的过程中遇到了中断
 				continue;
 			return -errno;
 		}

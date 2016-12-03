@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/utsname.h>
 
+//# ªÒ»°linux∞Ê±æ
 int get_linux_version(void)
 {
 	struct utsname ubuf;

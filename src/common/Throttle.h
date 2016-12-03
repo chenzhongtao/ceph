@@ -26,7 +26,7 @@ class Throttle {
   CephContext *cct;
   const std::string name;
   PerfCounters *logger;
-  ceph::atomic_t count, max;
+  ceph::atomic_t count, max; //# 当前数目, 最大数目
   Mutex lock;
   list<Cond*> cond;
   const bool use_perf;
@@ -37,13 +37,14 @@ public:
 
 private:
   void _reset_max(int64_t m);
+  //# 是否应该等待,max不为0,...
   bool _should_wait(int64_t c) const {
     int64_t m = max.read();
     int64_t cur = count.read();
     return
       m &&
-      ((c <= m && cur + c > m) || // normally stay under max
-       (c >= m && cur > m));     // except for large c
+      ((c <= m && cur + c > m) || // normally stay under max   正常情况下我们保持添加后count < = max
+       (c >= m && cur > m));     // except for large c         如果c很大,我们保持之前的count <= max
   }
 
   bool _wait(int64_t c);
@@ -105,6 +106,7 @@ public:
   bool should_wait(int64_t c) const {
     return _should_wait(c);
   }
+  //# 重新设置最大值
   void reset_max(int64_t m) {
     Mutex::Locker l(lock);
     _reset_max(m);

@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 namespace ceph {
-  using std::unordered_map;
+  using std::unordered_map; //# hash map
   using std::unordered_multimap;
 }
 

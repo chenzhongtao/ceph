@@ -42,8 +42,8 @@ class SafeTimer
   void timer_thread();
   void _shutdown();
 
-  std::multimap<utime_t, Context*> schedule;
-  std::map<Context*, std::multimap<utime_t, Context*>::iterator> events;
+  std::multimap<utime_t, Context*> schedule; //# 时间表,所有事件都插在这里,  根据时间排序
+  std::map<Context*, std::multimap<utime_t, Context*>::iterator> events; //# 某个callback对应的事件, 根据callback排序,取消事件先在这里查找
   bool stopping;
 
   void dump(const char *caller = 0) const;

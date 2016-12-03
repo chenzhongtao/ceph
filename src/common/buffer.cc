@@ -1437,7 +1437,7 @@ static simple_spinlock_t buffer_debug_lock = SIMPLE_SPINLOCK_INITIALIZER;
     clear();
     claim_append(bl, flags);
   }
-
+//# steal 其他的数据,bl变为空
   void buffer::list::claim_append(list& bl, unsigned int flags)
   {
     // steal the other guy's buffers

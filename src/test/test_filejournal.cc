@@ -61,7 +61,7 @@ public:
   }
 };
 
-unsigned size_mb = 200;
+unsigned size_mb = 100;
 //Gtest argument prefix
 const char GTEST_PRFIX[] = "--gtest_";
 
