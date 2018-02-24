@@ -60,14 +60,14 @@ SafeTimer::~SafeTimer()
     assert(thread == NULL);
 }
 
-//# SafeTimer³õÊ¼»¯,Æô¶¯Ò»¸öÏß³Ì
+//# SafeTimeråˆå§‹åŒ–,å¯åŠ¨ä¸€ä¸ªçº¿ç¨‹
 void SafeTimer::init()
 {
     ldout(cct,10) << "init" << dendl;
     thread = new SafeTimerThread(this);
     thread->create();
 }
-//# ÍË³öÏß³Ì
+//# é€€å‡ºçº¿ç¨‹
 void SafeTimer::shutdown()
 {
     ldout(cct,10) << "shutdown" << dendl;
@@ -75,16 +75,16 @@ void SafeTimer::shutdown()
         assert(lock.is_locked());
         cancel_all_events();
         stopping = true;
-        cond.Signal();//# »½ĞÑÏß³Ì
+        cond.Signal();//# å”¤é†’çº¿ç¨‹
         lock.Unlock();
-        thread->join(); //# µÈ´ıÏß³ÌÍË³ö
+        thread->join(); //# ç­‰å¾…çº¿ç¨‹é€€å‡º
         lock.Lock();
         delete thread;
         thread = NULL;
     }
 }
 
-//# timerÏß³ÌÖ÷º¯Êı
+//# timerçº¿ç¨‹ä¸»å‡½æ•°
 void SafeTimer::timer_thread()
 {
     lock.Lock();
@@ -96,7 +96,7 @@ void SafeTimer::timer_thread()
             scheduled_map_t::iterator p = schedule.begin();
 
             // is the future now?
-            if (p->first > now)//# »¹Ã»µ½Ê±¼ä
+            if (p->first > now)//# è¿˜æ²¡åˆ°æ—¶é—´
                 break;
 
             Context *callback = p->second;
@@ -104,7 +104,7 @@ void SafeTimer::timer_thread()
             schedule.erase(p);
             ldout(cct,10) << "timer_thread executing " << callback << dendl;
 
-            if (!safe_callbacks)//# ²»°²È«µÄ»Øµ÷,²»ÓÃ¼ÓËø
+            if (!safe_callbacks)//# ä¸å®‰å…¨çš„å›è°ƒ,ä¸ç”¨åŠ é”
                 lock.Unlock();
             callback->complete(0);
             if (!safe_callbacks)
@@ -117,16 +117,16 @@ void SafeTimer::timer_thread()
 
         ldout(cct,20) << "timer_thread going to sleep" << dendl;
         if (schedule.empty())
-            cond.Wait(lock);//# Èç¹ûÊ±¼ä±íÎª¿Õ,Ò»Ö±µÈ´ı
+            cond.Wait(lock);//# å¦‚æœæ—¶é—´è¡¨ä¸ºç©º,ä¸€ç›´ç­‰å¾…
         else
-            cond.WaitUntil(lock, schedule.begin()->first);//# µÈ´ıµ½µÚÒ»¸öÊÂ¼şµÄ´¥·¢Ê±¼ä
+            cond.WaitUntil(lock, schedule.begin()->first);//# ç­‰å¾…åˆ°ç¬¬ä¸€ä¸ªäº‹ä»¶çš„è§¦å‘æ—¶é—´
         ldout(cct,20) << "timer_thread awake" << dendl;
     }
     ldout(cct,10) << "timer_thread exiting" << dendl;
     lock.Unlock();
 }
 
-//# Ìí¼ÓÒ»¸ö¶à¾ÃÖ®ºó´¥·¢µÄÊÂ¼ş
+//# æ·»åŠ ä¸€ä¸ªå¤šä¹…ä¹‹åè§¦å‘çš„äº‹ä»¶
 void SafeTimer::add_event_after(double seconds, Context *callback)
 {
     assert(lock.is_locked());
@@ -135,29 +135,29 @@ void SafeTimer::add_event_after(double seconds, Context *callback)
     when += seconds;
     add_event_at(when, callback);
 }
-//# Ìí¼ÓÒ»¸öÔÚÄ³¸öÊ±¼ä´¥·¢µÄÊÂ¼ş
+//# æ·»åŠ ä¸€ä¸ªåœ¨æŸä¸ªæ—¶é—´è§¦å‘çš„äº‹ä»¶
 void SafeTimer::add_event_at(utime_t when, Context *callback)
 {
     assert(lock.is_locked());
     ldout(cct,10) << "add_event_at " << when << " -> " << callback << dendl;
 
-    scheduled_map_t::value_type s_val(when, callback); //#  typedef pair value_type ÕâÀïÆäÊµ¾ÍÊÇpair
-    scheduled_map_t::iterator i = schedule.insert(s_val);  //# multimap insert µÄ·µ»ØÖµ: iterator
+    scheduled_map_t::value_type s_val(when, callback); //#  typedef pair value_type è¿™é‡Œå…¶å®å°±æ˜¯pair
+    scheduled_map_t::iterator i = schedule.insert(s_val);  //# multimap insert çš„è¿”å›å€¼: iterator
 
     event_lookup_map_t::value_type e_val(callback, i);  
-    pair < event_lookup_map_t::iterator, bool > rval(events.insert(e_val)); //# map insert µÄ·µ»ØÖµ: pair<iterator,bool>
+    pair < event_lookup_map_t::iterator, bool > rval(events.insert(e_val)); //# map insert çš„è¿”å›å€¼: pair<iterator,bool>
 
     /* If you hit this, you tried to insert the same Context* twice. */
     assert(rval.second);
 
     /* If the event we have just inserted comes before everything else, we need to
      * adjust our timeout. */
-    if (i == schedule.begin())//# ±íÊ¾Ö®Ç°µÄÊÂ¼şÁĞ±íÎª¿Õ,»òÕßÊ±¼ä±ÈÖ®Ç°µÄÊÂ¼ş¶¼Ôç,Ïß³ÌÔÚwait,Ö±½Ó»½ĞÑ
+    if (i == schedule.begin())//# è¡¨ç¤ºä¹‹å‰çš„äº‹ä»¶åˆ—è¡¨ä¸ºç©º,æˆ–è€…æ—¶é—´æ¯”ä¹‹å‰çš„äº‹ä»¶éƒ½æ—©,çº¿ç¨‹åœ¨wait,ç›´æ¥å”¤é†’
         cond.Signal();
 
 }
 
-//# ¸ù¾İcallbackÈ¡ÏûÒ»¸öÊÂ¼ş
+//# æ ¹æ®callbackå–æ¶ˆä¸€ä¸ªäº‹ä»¶
 bool SafeTimer::cancel_event(Context *callback)
 {
     assert(lock.is_locked());
@@ -175,7 +175,7 @@ bool SafeTimer::cancel_event(Context *callback)
     events.erase(p);
     return true;
 }
-//# È¡ÏûËùÓĞÊÂ¼ş
+//# å–æ¶ˆæ‰€æœ‰äº‹ä»¶
 void SafeTimer::cancel_all_events()
 {
     ldout(cct,10) << "cancel_all_events" << dendl;
@@ -189,7 +189,7 @@ void SafeTimer::cancel_all_events()
         events.erase(p);
     }
 }
-//# ´òÓ¡ËùÓĞÊÂ¼ş
+//# æ‰“å°æ‰€æœ‰äº‹ä»¶
 void SafeTimer::dump(const char *caller) const
 {
     if (!caller)

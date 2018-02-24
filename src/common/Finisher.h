@@ -46,7 +46,7 @@ class Finisher
     /// Queue for contexts for which complete(0) will be called.
     /// NULLs in this queue indicate that an item from finisher_queue_rval
     /// should be completed in that place instead.
-    //# Èç¹û¶ÓÁĞ¶ÔÓ¦µÄContextÎªNULL,±íÊ¾¶ÔÓ¦µÄContextÊÇ´æÔÚfinisher_queue_rval,ËùÒÔÖ»Ğè±éÀúfinisher_queue
+    //# å¦‚æœé˜Ÿåˆ—å¯¹åº”çš„Contextä¸ºNULL,è¡¨ç¤ºå¯¹åº”çš„Contextæ˜¯å­˜åœ¨finisher_queue_rval,æ‰€ä»¥åªéœ€éå†finisher_queue
     vector<Context*> finisher_queue;
 
     /// Queue for contexts for which the complete function will be called
@@ -74,7 +74,7 @@ public:
     {
         finisher_lock.Lock();
         if (finisher_queue.empty()) {
-            finisher_cond.Signal();//# ²»Îª¿ÕÊ±Ïß³ÌÃ»ÓĞÔİÍ£µÈ´ı,ËùÒÔ²»ÓÃ½ĞĞÑ
+            finisher_cond.Signal();//# ä¸ä¸ºç©ºæ—¶çº¿ç¨‹æ²¡æœ‰æš‚åœç­‰å¾…,æ‰€ä»¥ä¸ç”¨å«é†’
         }
         if (r) {
             finisher_queue_rval.push_back(pair<Context*, int>(c, r));
@@ -83,7 +83,7 @@ public:
             finisher_queue.push_back(c);
         if (logger)
             logger->inc(l_finisher_queue_len);
-        finisher_lock.Unlock();//# µÈ´ı½âËøÖ®ºó,ÄÇ±ßµÄwait²Å»á¼ÌĞøÔËĞĞ,ËùÒÔfinisher_cond.Signal()ÔÚÇ°ÃæÒ²¿ÉÒÔ
+        finisher_lock.Unlock();//# ç­‰å¾…è§£é”ä¹‹å,é‚£è¾¹çš„waitæ‰ä¼šç»§ç»­è¿è¡Œ,æ‰€ä»¥finisher_cond.Signal()åœ¨å‰é¢ä¹Ÿå¯ä»¥
     }
     void queue(vector<Context*>& ls)
     {

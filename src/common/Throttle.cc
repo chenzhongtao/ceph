@@ -77,19 +77,19 @@ Throttle::~Throttle()
     }
 }
 
-//# ÖØĞÂÉèÖÃ×î´óÖµ
+//# é‡æ–°è®¾ç½®æœ€å¤§å€¼
 void Throttle::_reset_max(int64_t m)
 {
     assert(lock.is_locked());
     if ((int64_t)max.read() == m)
         return;
     if (!cond.empty())
-        cond.front()->SignalOne(); //# »½ĞÑÒ»¸öµÈ´ı
+        cond.front()->SignalOne(); //# å”¤é†’ä¸€ä¸ªç­‰å¾…
     if (logger)
         logger->set(l_throttle_max, m);
     max.set((size_t)m);
 }
-//# Ôö¼ÓcountÊÇ·ñĞèÒªµÈ´ı,²¢wait
+//# å¢åŠ countæ˜¯å¦éœ€è¦ç­‰å¾…,å¹¶wait
 bool Throttle::_wait(int64_t c)
 {
     utime_t start;
@@ -104,7 +104,7 @@ bool Throttle::_wait(int64_t c)
                     start = ceph_clock_now(cct);
             }
             waited = true;
-            cv->Wait(lock); //# µÈ´ıÓĞÈËput,²¢·¢ËÍĞÅºÅÀ´»½ĞÑ
+            cv->Wait(lock); //# ç­‰å¾…æœ‰äººput,å¹¶å‘é€ä¿¡å·æ¥å”¤é†’
         } while (_should_wait(c) || cv != cond.front());
 
         if (waited) {
@@ -124,7 +124,7 @@ bool Throttle::_wait(int64_t c)
     }
     return waited;
 }
-//# ÖØÖÃmaxÊÇ·ñĞèÒªµÈ´ı,²¢wait
+//# é‡ç½®maxæ˜¯å¦éœ€è¦ç­‰å¾…,å¹¶wait
 bool Throttle::wait(int64_t m)
 {
     if (0 == max.read() && 0 == m) {
@@ -139,7 +139,7 @@ bool Throttle::wait(int64_t m)
     ldout(cct, 10) << "wait" << dendl;
     return _wait(0);
 }
-//# countÔö¼Ó c,Ö±½Ó¼Ó,²»ÓÃµÈ´ı
+//# countå¢åŠ  c,ç›´æ¥åŠ ,ä¸ç”¨ç­‰å¾…
 int64_t Throttle::take(int64_t c)
 {
     if (0 == max.read()) {
@@ -159,7 +159,7 @@ int64_t Throttle::take(int64_t c)
     return count.read();
 }
 
-//# count + c ²¢ÖØĞÂÉèÖÃ max(mÄ¬ÈÏÎª0,²»ÖØÖÃ), ·µ»ØÊÇ·ñĞèÒªµÈ´ı
+//# count + c å¹¶é‡æ–°è®¾ç½® max(mé»˜è®¤ä¸º0,ä¸é‡ç½®), è¿”å›æ˜¯å¦éœ€è¦ç­‰å¾…
 bool Throttle::get(int64_t c, int64_t m)
 {
     if (0 == max.read() && 0 == m) {
@@ -189,7 +189,7 @@ bool Throttle::get(int64_t c, int64_t m)
 /* Returns true if it successfully got the requested amount,
  * or false if it would block.
  */
- //# count + c , Èç¹ûĞèÒªµÈ´ı,²»¼Ó·µ»Øfalse,²»ĞèÒªµÈ´ı¾Í+c,²¢·µ»Øtrue
+ //# count + c , å¦‚æœéœ€è¦ç­‰å¾…,ä¸åŠ è¿”å›false,ä¸éœ€è¦ç­‰å¾…å°±+c,å¹¶è¿”å›true
 bool Throttle::get_or_fail(int64_t c)
 {
     if (0 == max.read()) {
@@ -217,7 +217,7 @@ bool Throttle::get_or_fail(int64_t c)
     }
 }
 
-//# count ¼õÈ¥ c,·µ»Ø countµÄµ±Ç°Öµ
+//# count å‡å» c,è¿”å› countçš„å½“å‰å€¼
 int64_t Throttle::put(int64_t c)
 {
     if (0 == max.read()) {
@@ -229,7 +229,7 @@ int64_t Throttle::put(int64_t c)
     Mutex::Locker l(lock);
     if (c) {
         if (!cond.empty())
-            cond.front()->SignalOne(); //# »½ĞÑÒ»¸öµÈ´ı
+            cond.front()->SignalOne(); //# å”¤é†’ä¸€ä¸ªç­‰å¾…
         assert(((int64_t)count.read()) >= c); //if count goes negative, we failed somewhere!
         count.sub(c);
         if (logger) {

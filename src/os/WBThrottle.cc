@@ -43,7 +43,7 @@ WBThrottle::~WBThrottle()
     delete logger;
     cct->_conf->remove_observer(this);
 }
-//# Æô¶¯Ïß³Ì
+//# å¯åŠ¨çº¿ç¨‹
 void WBThrottle::start()
 {
     {
@@ -52,7 +52,7 @@ void WBThrottle::start()
     }
     create();
 }
-//# Í£Ö¹Ïß³Ì
+//# åœæ­¢çº¿ç¨‹
 void WBThrottle::stop()
 {
     {
@@ -83,7 +83,7 @@ const char** WBThrottle::get_tracked_conf_keys() const
     };
     return KEYS;
 }
-//# ´ÓÅäÖÃ¶ÁÈ¡Ä¬ÈÏ²ÎÊı
+//# ä»é…ç½®è¯»å–é»˜è®¤å‚æ•°
 void WBThrottle::set_from_conf()
 {
     assert(lock.is_locked());
@@ -118,7 +118,7 @@ void WBThrottle::set_from_conf()
     }
     cond.Signal();
 }
-//# ¸üĞÂÅäÖÃ
+//# æ›´æ–°é…ç½®
 void WBThrottle::handle_conf_change(const md_config_t *conf,
                                     const std::set<std::string> &changed)
 {
@@ -130,13 +130,13 @@ void WBThrottle::handle_conf_change(const md_config_t *conf,
         }
     }
 }
-//# »ñÈ¡Ò»ÏîÓ¦¸ÃË¢µÄÏî
+//# è·å–ä¸€é¡¹åº”è¯¥åˆ·çš„é¡¹
 bool WBThrottle::get_next_should_flush(
     boost::tuple<ghobject_t, FDRef, PendingWB> *next)
 {
     assert(lock.is_locked());
     assert(next);
-    while (!stopping && !beyond_limit()) //# Ã»ÓĞÍ£Ö¹ ²¢ÇÒÃ»ÓĞÄÇÒ»Ïî³¬³öÈíÏŞÖÆ
+    while (!stopping && !beyond_limit()) //# æ²¡æœ‰åœæ­¢ å¹¶ä¸”æ²¡æœ‰é‚£ä¸€é¡¹è¶…å‡ºè½¯é™åˆ¶
         cond.Wait(lock);
     if (stopping)
         return false;
@@ -150,7 +150,7 @@ bool WBThrottle::get_next_should_flush(
     return true;
 }
 
-//# WBThrottleÏß³ÌÖ÷º¯Êı
+//# WBThrottleçº¿ç¨‹ä¸»å‡½æ•°
 void *WBThrottle::entry()
 {
     Mutex::Locker l(lock);
@@ -259,7 +259,7 @@ void WBThrottle::clear_object(const ghobject_t &hoid)
     remove_object(hoid);
     cond.Signal();
 }
-//# ½ÚÁ÷
+//# èŠ‚æµ
 void WBThrottle::throttle()
 {
     Mutex::Locker l(lock);

@@ -43,7 +43,7 @@ HeartbeatMap::~HeartbeatMap()
   assert(m_workers.empty());
 }
 
-//# Ìí¼ÓÒ»¸öworker
+//# æ·»åŠ ä¸€ä¸ªworker
 heartbeat_handle_d *HeartbeatMap::add_worker(const string& name)
 {
   m_rwlock.get_write();
@@ -55,7 +55,7 @@ heartbeat_handle_d *HeartbeatMap::add_worker(const string& name)
   return h;
 }
 
-//# ÒÆ³ıÒ»¸öworker
+//# ç§»é™¤ä¸€ä¸ªworker
 void HeartbeatMap::remove_worker(const heartbeat_handle_d *h)
 {
   m_rwlock.get_write();
@@ -64,7 +64,7 @@ void HeartbeatMap::remove_worker(const heartbeat_handle_d *h)
   m_rwlock.put_write();
   delete h;
 }
-//# ¼ì²âÊÇ·ñ³¬Ê±
+//# æ£€æµ‹æ˜¯å¦è¶…æ—¶
 bool HeartbeatMap::_check(const heartbeat_handle_d *h, const char *who, time_t now)
 {
   bool healthy = true;
@@ -84,7 +84,7 @@ bool HeartbeatMap::_check(const heartbeat_handle_d *h, const char *who, time_t n
   }
   return healthy;
 }
-//# ÖØÖÃ³¬Ê±Ê±¼ä,ÖØÖÃÇ°ÓĞcheckÖ®Ç°ÓĞÃ»³¬Ê±
+//# é‡ç½®è¶…æ—¶æ—¶é—´,é‡ç½®å‰æœ‰checkä¹‹å‰æœ‰æ²¡è¶…æ—¶
 void HeartbeatMap::reset_timeout(heartbeat_handle_d *h, time_t grace, time_t suicide_grace)
 {
   ldout(m_cct, 20) << "reset_timeout '" << h->name << "' grace " << grace
@@ -102,7 +102,7 @@ void HeartbeatMap::reset_timeout(heartbeat_handle_d *h, time_t grace, time_t sui
   h->suicide_grace = suicide_grace;
 }
 
-//# Çå³ıÉèÖÃ³¬Ê±Ê±¼ä,Çå³ıÇ°ÓĞcheckÖ®Ç°ÓĞÃ»³¬Ê±
+//# æ¸…é™¤è®¾ç½®è¶…æ—¶æ—¶é—´,æ¸…é™¤å‰æœ‰checkä¹‹å‰æœ‰æ²¡è¶…æ—¶
 void HeartbeatMap::clear_timeout(heartbeat_handle_d *h)
 {
   ldout(m_cct, 20) << "clear_timeout '" << h->name << "'" << dendl;
@@ -111,7 +111,7 @@ void HeartbeatMap::clear_timeout(heartbeat_handle_d *h)
   h->timeout.set(0);
   h->suicide_timeout.set(0);
 }
-//# ¼ì²éËùÓĞworker
+//# æ£€æŸ¥æ‰€æœ‰worker
 bool HeartbeatMap::is_healthy()
 {
   int unhealthy = 0;
@@ -125,7 +125,7 @@ bool HeartbeatMap::is_healthy()
   }
 
   bool healthy = true;
-  if (now < m_inject_unhealthy_until) { //# È«¾ÖµÄ,³õÊÔÎª0
+  if (now < m_inject_unhealthy_until) { //# å…¨å±€çš„,åˆè¯•ä¸º0
     ldout(m_cct, 0) << "is_healthy = false, injected failure for next " << (m_inject_unhealthy_until - now) << " seconds" << dendl;
     healthy = false;
   }
@@ -150,13 +150,13 @@ bool HeartbeatMap::is_healthy()
   return healthy;
 }
 
-//# »ñÈ¡²»½¡¿µworkerÊıÄ¿
+//# è·å–ä¸å¥åº·workeræ•°ç›®
 int HeartbeatMap::get_unhealthy_workers() const
 {
   return m_unhealthy_workers.read();
 }
 
-//# »ñÈ¡×ÜµÄworkerÊıÄ¿
+//# è·å–æ€»çš„workeræ•°ç›®
 int HeartbeatMap::get_total_workers() const
 {
   return m_total_workers.read();

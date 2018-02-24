@@ -676,7 +676,7 @@ void FileStore::collect_metadata(map<string,string> *pm)
     }
 }
 
-//#»ñÈ¡¸ùÄ¿Â¼µÄĞÅÏ¢
+//#è·å–æ ¹ç›®å½•çš„ä¿¡æ¯
 int FileStore::statfs(struct statfs *buf)
 {
     if (::statfs(basedir.c_str(), buf) < 0) {
@@ -687,7 +687,7 @@ int FileStore::statfs(struct statfs *buf)
     return 0;
 }
 
-//# ÊµÀı»¯journal
+//# å®ä¾‹åŒ–journal
 void FileStore::new_journal()
 {
     if (journalpath.length()) {
@@ -699,7 +699,7 @@ void FileStore::new_journal()
     }
     return;
 }
-//# Êä³öÈÕÖ¾µÄÄÚÈİ
+//# è¾“å‡ºæ—¥å¿—çš„å†…å®¹
 int FileStore::dump_journal(ostream& out)
 {
     int r;
@@ -713,7 +713,7 @@ int FileStore::dump_journal(ostream& out)
     return r;
 }
 
-//# ´´½¨backend
+//# åˆ›å»ºbackend
 FileStoreBackend *FileStoreBackend::create(long f_type, FileStore *fs)
 {
     switch (f_type) {
@@ -734,7 +734,7 @@ FileStoreBackend *FileStoreBackend::create(long f_type, FileStore *fs)
     }
 }
 
-//# ´´½¨backend
+//# åˆ›å»ºbackend
 void FileStore::create_backend(long f_type)
 {
     m_fs_type = f_type;
@@ -761,7 +761,7 @@ void FileStore::create_backend(long f_type)
     set_xattr_limits_via_conf();
 }
 
-//# ´´½¨ÎÄ¼şÏµÍ³£¬Ò²¾ÍÊÇÉú³É basedir Ä¿Â¼ÏÂµÄÎÄ¼şºÍÄ¿Â¼
+//# åˆ›å»ºæ–‡ä»¶ç³»ç»Ÿï¼Œä¹Ÿå°±æ˜¯ç”Ÿæˆ basedir ç›®å½•ä¸‹çš„æ–‡ä»¶å’Œç›®å½•
 int FileStore::mkfs()
 {
     int ret = 0;
@@ -832,7 +832,7 @@ int FileStore::mkfs()
     }
 
     // version stamp
-    ret = write_version_stamp(); //# hexdump /tmp/osd/store_version Ğ´µÄÊÇintµÄ×Ö½ÚĞò£¬cat ¿´²»³ö
+    ret = write_version_stamp(); //# hexdump /tmp/osd/store_version å†™çš„æ˜¯intçš„å­—èŠ‚åºï¼Œcat çœ‹ä¸å‡º
     if (ret < 0) {
         derr << "mkfs: write_version_stamp() failed: "
              << cpp_strerror(ret) << dendl;
@@ -848,7 +848,7 @@ int FileStore::mkfs()
         goto close_fsid_fd;
     }
 
-	//# »ñÈ¡ÎÄ¼şÏµÍ³ĞÅÏ¢
+	//# è·å–æ–‡ä»¶ç³»ç»Ÿä¿¡æ¯
     struct statfs basefs;
     ret = ::fstatfs(basedir_fd, &basefs);
     if (ret < 0) {
@@ -857,7 +857,7 @@ int FileStore::mkfs()
              << cpp_strerror(ret) << dendl;
         goto close_fsid_fd;
     }
-	//# ´´½¨Ò»¸öxfs backend
+	//# åˆ›å»ºä¸€ä¸ªxfs backend
     create_backend(basefs.f_type);
 
     ret = backend->create_current();
@@ -884,7 +884,7 @@ int FileStore::mkfs()
                 goto close_fsid_fd;
             }
 
-            if (backend->can_checkpoint()) { //# xfs²»ÄÜ
+            if (backend->can_checkpoint()) { //# xfsä¸èƒ½
                 // create snap_1 too
                 current_fd = ::open(current_fn.c_str(), O_RDONLY);
                 assert(current_fd >= 0);
@@ -966,7 +966,7 @@ int FileStore::mkjournal()
     return ret;
 }
 
-//# ¶ÁÈ¡fsidµÄÄÚÈİ
+//# è¯»å–fsidçš„å†…å®¹
 int FileStore::read_fsid(int fd, uuid_d *uuid)
 {
     char fsid_str[40];
@@ -980,7 +980,7 @@ int FileStore::read_fsid(int fd, uuid_d *uuid)
         return 0;
     }
 
-    if (ret > 36) //# uuid 36Î»
+    if (ret > 36) //# uuid 36ä½
         fsid_str[36] = 0;
     if (!uuid->parse(fsid_str))
         return -EINVAL;
@@ -1005,7 +1005,7 @@ int FileStore::lock_fsid()
     return 0;
 }
 
-//# ²âÊÔ¹ÒÔØµãÊÇ·ñ±»ÓÃ, fsid²»´æÔÚ»òÕßÃ»ÓĞ±»Ëø×¡
+//# æµ‹è¯•æŒ‚è½½ç‚¹æ˜¯å¦è¢«ç”¨, fsidä¸å­˜åœ¨æˆ–è€…æ²¡æœ‰è¢«é”ä½
 bool FileStore::test_mount_in_use()
 {
     dout(5) << "test_mount basedir " << basedir << " journal " << journalpath << dendl;
@@ -1023,7 +1023,7 @@ bool FileStore::test_mount_in_use()
     return inuse;
 }
 
-//# ²âÊÔÎÄ¼şÏµÍ³
+//# æµ‹è¯•æ–‡ä»¶ç³»ç»Ÿ
 int FileStore::_detect_fs()
 {
     struct statfs st;
@@ -1034,7 +1034,7 @@ int FileStore::_detect_fs()
     blk_size = st.f_bsize;
 
     create_backend(st.f_type);
-	//# ²âÊÔÌØĞÔ
+	//# æµ‹è¯•ç‰¹æ€§
     r = backend->detect_features(); //# XfsFileStoreBackend::detect_features
     if (r < 0) {
         derr << "_detect_fs: detect_features error: " << cpp_strerror(r) << dendl;
@@ -1088,7 +1088,7 @@ int FileStore::_detect_fs()
 
     return 0;
 }
-//# È«Ãæ²âÊÔ
+//# å…¨é¢æµ‹è¯•
 int FileStore::_sanity_check_fs()
 {
     // sanity check(s)
@@ -1131,7 +1131,7 @@ int FileStore::_sanity_check_fs()
 
     return 0;
 }
-//# Ğ´superblockÎÄ¼ş leveldb
+//# å†™superblockæ–‡ä»¶ leveldb
 int FileStore::write_superblock()
 {
     bufferlist bl;
@@ -1159,7 +1159,7 @@ int FileStore::read_superblock()
     ::decode(superblock, i);
     return 0;
 }
-//# ÉèÖÃsharded_objectsÌØĞÔ
+//# è®¾ç½®sharded_objectsç‰¹æ€§
 void FileStore::set_allow_sharded_objects()
 {
     if (!get_allow_sharded_objects()) {
@@ -1169,20 +1169,20 @@ void FileStore::set_allow_sharded_objects()
     }
     return;
 }
-//# »ñÈ¡sharded_objectsÌØĞÔ
+//# è·å–sharded_objectsç‰¹æ€§
 bool FileStore::get_allow_sharded_objects()
 {
     return g_conf->filestore_debug_disable_sharded_check ||
            superblock.compat_features.incompat.contains(CEPH_FS_FEATURE_INCOMPAT_SHARDS);
 }
 
-//# ¸üĞÂstamp
+//# æ›´æ–°stamp
 int FileStore::update_version_stamp()
 {
     return write_version_stamp();
 }
 
-//# ÅĞ¶ÏversionÊÇ·ñÓĞĞ§
+//# åˆ¤æ–­versionæ˜¯å¦æœ‰æ•ˆ
 int FileStore::version_stamp_is_valid(uint32_t *version)
 {
     bufferptr bp(PATH_MAX);
@@ -1205,7 +1205,7 @@ int FileStore::version_stamp_is_valid(uint32_t *version)
         return 0;
 }
 
-//# Ğ´stamp 4
+//# å†™stamp 4
 int FileStore::write_version_stamp()
 {
     dout(1) << __func__ << " " << target_version << dendl;
@@ -1216,7 +1216,7 @@ int FileStore::write_version_stamp()
                            bl.c_str(), bl.length());
 }
 
-//#¡¡Éı¼¶
+//#ã€€å‡çº§
 int FileStore::upgrade()
 {
     dout(1) << "upgrade" << dendl;
@@ -1238,7 +1238,7 @@ int FileStore::upgrade()
     return 0;
 }
 
-//# ¶Áseq  /current/commit_op_seq
+//# è¯»seq  /current/commit_op_seq
 int FileStore::read_op_seq(uint64_t *seq)
 {
     int op_fd = ::open(current_op_seq_fn.c_str(), O_CREAT|O_RDWR, 0644);
@@ -1256,11 +1256,11 @@ int FileStore::read_op_seq(uint64_t *seq)
         assert(!m_filestore_fail_eio || ret != -EIO);
         return ret;
     }
-    *seq = atoll(s); //# ¿ÕµÄ»°£¬seq=0
+    *seq = atoll(s); //# ç©ºçš„è¯ï¼Œseq=0
     return op_fd;
 }
 
-//# Ğ´seq /current/commit_op_seq
+//# å†™seq /current/commit_op_seq
 int FileStore::write_op_seq(int fd, uint64_t seq)
 {
     char s[30];
@@ -1561,7 +1561,7 @@ int FileStore::mount()
                 dout(0) << "mount: enabling PARALLEL journal mode: fs, checkpoint is enabled" << dendl;
             }
         } else {
-            if (m_filestore_journal_writeahead) //# Ä¬ÈÏ
+            if (m_filestore_journal_writeahead) //# é»˜è®¤
                 dout(0) << "mount: WRITEAHEAD journal mode explicitly enabled in conf" << dendl;
             if (m_filestore_journal_parallel)
                 dout(0) << "mount: PARALLEL journal mode explicitly enabled in conf" << dendl;
@@ -1583,7 +1583,7 @@ int FileStore::mount()
 
     // Cleanup possibly invalid collections
     {
-        vector<coll_t> collections;//# ÎÄ¼ş¼Ğ
+        vector<coll_t> collections;//# æ–‡ä»¶å¤¹
         ret = list_collections(collections, true);
         if (ret < 0) {
             derr << "Error " << ret << " while listing collections" << dendl;
@@ -1607,7 +1607,7 @@ int FileStore::mount()
     }
 
     wbthrottle.start();
-    sync_thread.create(); //# FileStore ÖĞ¶¨ÒåµÄÀà
+    sync_thread.create(); //# FileStore ä¸­å®šä¹‰çš„ç±»
 
     if (!(generic_flags & SKIP_JOURNAL_REPLAY)) {
         ret = journal_replay(initial_op_seq);
@@ -1776,7 +1776,7 @@ int FileStore::umount()
 
 
 /// -----------------------------
-//# ´´½¨Ò»¸öFileStore::Op
+//# åˆ›å»ºä¸€ä¸ªFileStore::Op
 FileStore::Op *FileStore::build_op(list<Transaction*>& tls,
                                    Context *onreadable,
                                    Context *onreadable_sync,
@@ -1795,14 +1795,14 @@ FileStore::Op *FileStore::build_op(list<Transaction*>& tls,
     o->tls.swap(tls);
     o->onreadable = onreadable;
     o->onreadable_sync = onreadable_sync;
-    o->ops = ops;//# ×ÜµÄopÊı
-    o->bytes = bytes;//# ×ÜµÄ×Ö½ÚÊı
+    o->ops = ops;//# æ€»çš„opæ•°
+    o->bytes = bytes;//# æ€»çš„å­—èŠ‚æ•°
     o->osd_op = osd_op;
     return o;
 }
 
 
-//# Ìá½»opÈë OpSequencer::q ¶ÓÁĞ,  OpSequencer·Åµ½op_wq,Ïß³Ì³Ø»áÔÚÕâÀïÈ¡
+//# æäº¤opå…¥ OpSequencer::q é˜Ÿåˆ—,  OpSequenceræ”¾åˆ°op_wq,çº¿ç¨‹æ± ä¼šåœ¨è¿™é‡Œå–
 void FileStore::queue_op(OpSequencer *osr, Op *o)
 {
     // queue op on sequencer, then queue sequencer for the threadpool,
@@ -1821,7 +1821,7 @@ void FileStore::queue_op(OpSequencer *osr, Op *o)
             << dendl;
     op_wq.queue(osr);
 }
-//# filestore ²ã½ÚÁ÷
+//# filestore å±‚èŠ‚æµ
 void FileStore::op_queue_reserve_throttle(Op *o, ThreadPool::TPHandle *handle)
 {
     // Do not call while holding the journal lock!
@@ -1839,14 +1839,14 @@ void FileStore::op_queue_reserve_throttle(Op *o, ThreadPool::TPHandle *handle)
     utime_t start = ceph_clock_now(g_ceph_context);
     if (handle)
         handle->suspend_tp_timeout();
-	//# ½ÚÁ÷µÈ´ı
+	//# èŠ‚æµç­‰å¾…
     if (throttle_ops.should_wait(1) ||
         (throttle_bytes.get_current()      // let single large ops through!
          && throttle_bytes.should_wait(o->bytes))) {
         dout(2) << "waiting " << throttle_ops.get_current() + 1 << " > " << max_ops << " ops || "
                 << throttle_bytes.get_current() + o->bytes << " > " << max_bytes << dendl;
     }
-    throttle_ops.get();//# ¼Ó1
+    throttle_ops.get();//# åŠ 1
     throttle_bytes.get(o->bytes);
     if (handle)
         handle->reset_tp_timeout();
@@ -1870,12 +1870,12 @@ void FileStore::_do_op(OpSequencer *osr, ThreadPool::TPHandle &handle)
 {
     wbthrottle.throttle();
     // inject a stall?
-    if (g_conf->filestore_inject_stall) { //# 0 ¿ØÖÆËÙ¶È,Ë¯¼¸Ãë
+    if (g_conf->filestore_inject_stall) { //# 0 æ§åˆ¶é€Ÿåº¦,ç¡å‡ ç§’
         int orig = g_conf->filestore_inject_stall;
         dout(5) << "_do_op filestore_inject_stall " << orig << ", sleeping" << dendl;
         for (int n = 0; n < g_conf->filestore_inject_stall; n++)
             sleep(1);
-        g_conf->set_val("filestore_inject_stall", "0");//# ÉèÖÃÎª0
+        g_conf->set_val("filestore_inject_stall", "0");//# è®¾ç½®ä¸º0
         dout(5) << "_do_op done stalling" << dendl;
     }
 
@@ -1931,7 +1931,7 @@ struct C_JournaledAhead : public Context {
         fs->_journaled_ahead(osr, o, ondisk);
     }
 };
-//# ´¦ÀíÊÂÎñÁĞ±í
+//# å¤„ç†äº‹åŠ¡åˆ—è¡¨
 int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
                                   TrackedOpRef osd_op,
                                   ThreadPool::TPHandle *handle)
@@ -1941,7 +1941,7 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
     Context *onreadable_sync;
     ObjectStore::Transaction::collect_contexts(
         tls, &onreadable, &ondisk, &onreadable_sync);
-    if (g_conf->filestore_blackhole) {//# °ÑËùÓĞÊÂÎñ¶¼¶ªÆú,ÊÇ²»ÊÇÎªÁË²âÊÔ
+    if (g_conf->filestore_blackhole) {//# æŠŠæ‰€æœ‰äº‹åŠ¡éƒ½ä¸¢å¼ƒ,æ˜¯ä¸æ˜¯ä¸ºäº†æµ‹è¯•
         dout(0) << "queue_transactions filestore_blackhole = TRUE, dropping transaction" << dendl;
         delete ondisk;
         delete onreadable;
@@ -1953,8 +1953,8 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
     OpSequencer *osr;
     assert(posr);
     if (posr->p) {
-		//# Ç¿ÖÆ×ª»»ÎªOpSequencerÀàĞÍ, ¼Ì³Ğ Sequencer_implRef
-        osr = static_cast<OpSequencer *>(posr->p.get());//# »ñÈ¡posrµÄÒ»·İÒıÓÃ
+		//# å¼ºåˆ¶è½¬æ¢ä¸ºOpSequencerç±»å‹, ç»§æ‰¿ Sequencer_implRef
+        osr = static_cast<OpSequencer *>(posr->p.get());//# è·å–posrçš„ä¸€ä»½å¼•ç”¨
         dout(5) << "queue_transactions existing " << osr << " " << *osr << dendl;
     } else {
         osr = new OpSequencer;
@@ -1970,20 +1970,20 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
     }
 
     if (journal && journal->is_writeable() && !m_filestore_journal_trailing) {
-        Op *o = build_op(tls, onreadable, onreadable_sync, osd_op); //# ´´½¨Ò»¸öfilestore op
+        Op *o = build_op(tls, onreadable, onreadable_sync, osd_op); //# åˆ›å»ºä¸€ä¸ªfilestore op
         op_queue_reserve_throttle(o, handle);
-		//# ÈÕÖ¾²ã½ÚÁ÷
+		//# æ—¥å¿—å±‚èŠ‚æµ
         journal->throttle();
         //prepare and encode transactions data out of lock
         bufferlist tbl;
-		//# -1 ¿ÉÒÔºöÂÔ¶ÔÆë
+		//# -1 å¯ä»¥å¿½ç•¥å¯¹é½
         int data_align = _op_journal_transactions_prepare(o->tls, tbl);
-        uint64_t op_num = submit_manager.op_submit_start(); //# ·µ»Øop±àºÅ,Ò»¸öÊÂÎñÒ»¸öop
-        o->op = op_num;//# ÊÂÎñµÄop±àºÅ
-		//# ÊÇ·ñ°ÑÊÂÎñ´òÓ¡³öÀ´
+        uint64_t op_num = submit_manager.op_submit_start(); //# è¿”å›opç¼–å·,ä¸€ä¸ªäº‹åŠ¡ä¸€ä¸ªop
+        o->op = op_num;//# äº‹åŠ¡çš„opç¼–å·
+		//# æ˜¯å¦æŠŠäº‹åŠ¡æ‰“å°å‡ºæ¥
         if (m_filestore_do_dump)
             dump_transactions(o->tls, o->op, osr);
-		//# Ğ´ÈÕÖ¾ºÍĞ´opÍ¬Ê±½øĞĞ
+		//# å†™æ—¥å¿—å’Œå†™opåŒæ—¶è¿›è¡Œ
         if (m_filestore_journal_parallel) {
             dout(5) << "queue_transactions (parallel) " << o->op << " " << o->tls << dendl;
 
@@ -1993,8 +1993,8 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
             queue_op(osr, o);
         } else if (m_filestore_journal_writeahead) {
             dout(5) << "queue_transactions (writeahead) " << o->op << " " << o->tls << dendl;
-			//# °ÑopºÅÌá½»µ½ OpSequencer::jqÁĞ±í
-            osr->queue_journal(o->op); //# °Ñop±àºÅÌí¼Óµ½ÁĞ±í
+			//# æŠŠopå·æäº¤åˆ° OpSequencer::jqåˆ—è¡¨
+            osr->queue_journal(o->op); //# æŠŠopç¼–å·æ·»åŠ åˆ°åˆ—è¡¨
 
             _op_journal_transactions(tbl, data_align, o->op,
                                      new C_JournaledAhead(this, osr, o, ondisk),
@@ -2002,7 +2002,7 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
         } else {
             assert(0);
         }
-        submit_manager.op_submit_finish(op_num); //# ¸üĞÂop_submitted
+        submit_manager.op_submit_finish(op_num); //# æ›´æ–°op_submitted
         return 0;
     }
 
@@ -2057,13 +2057,13 @@ int FileStore::queue_transactions(Sequencer *posr, list<Transaction*> &tls,
 
     return r;
 }
-//# ÈÕÖ¾Ğ´Íê,»áµ÷ÓÃÕâ¸ö»Øµ÷º¯Êı C_JournaledAhead::finisher
+//# æ—¥å¿—å†™å®Œ,ä¼šè°ƒç”¨è¿™ä¸ªå›è°ƒå‡½æ•° C_JournaledAhead::finisher
 void FileStore::_journaled_ahead(OpSequencer *osr, Op *o, Context *ondisk)
 {
     dout(5) << "_journaled_ahead " << o << " seq " << o->op << " " << *osr << " " << o->tls << dendl;
 
     // this should queue in order because the journal does it's completions in order.
-    //# ÈÕÖ¾ÒÑ¾­Ğ´Íê,ÔÙÌá½»op
+    //# æ—¥å¿—å·²ç»å†™å®Œ,å†æäº¤op
     queue_op(osr, o);
 
     list<Context*> to_queue;
@@ -3579,7 +3579,7 @@ private:
     int m_commit_timeo;
 };
 
-//# syncÏß³ÌÖ÷º¯Êı
+//# syncçº¿ç¨‹ä¸»å‡½æ•°
 void FileStore::sync_entry()
 {
     lock.Lock();
@@ -3592,9 +3592,9 @@ void FileStore::sync_entry()
         utime_t startwait = ceph_clock_now(g_ceph_context);
         if (!force_sync) {
             dout(20) << "sync_entry waiting for max_interval " << max_interval << dendl;
-            sync_cond.WaitInterval(g_ceph_context, lock, max_interval); //# µÈ´ıÒ»¶ÎÊ±¼ä
+            sync_cond.WaitInterval(g_ceph_context, lock, max_interval); //# ç­‰å¾…ä¸€æ®µæ—¶é—´
         } else {
-            dout(20) << "sync_entry not waiting, force_sync set" << dendl; //# Ç¿ÖÆsync,²»ÓÃµÈ´ı
+            dout(20) << "sync_entry not waiting, force_sync set" << dendl; //# å¼ºåˆ¶sync,ä¸ç”¨ç­‰å¾…
         }
 
         if (force_sync) {
@@ -3605,7 +3605,7 @@ void FileStore::sync_entry()
             utime_t woke = ceph_clock_now(g_ceph_context);
             woke -= startwait;
             dout(20) << "sync_entry woke after " << woke << dendl;
-            if (woke < min_interval) { //# Ì«Ôç±»½ĞĞÑÁË,¼ÌĞøwaitÒ»¶ÎÊ±¼ä
+            if (woke < min_interval) { //# å¤ªæ—©è¢«å«é†’äº†,ç»§ç»­waitä¸€æ®µæ—¶é—´
                 utime_t t = min_interval;
                 t -= woke;
                 dout(20) << "sync_entry waiting for another " << t
@@ -3619,7 +3619,7 @@ again:
         fin.swap(sync_waiters);
         lock.Unlock();
 
-        op_tp.pause();//# ÔİÍ£ËùÓĞÏß³Ì
+        op_tp.pause();//# æš‚åœæ‰€æœ‰çº¿ç¨‹
         if (apply_manager.commit_start()) {
             utime_t start = ceph_clock_now(g_ceph_context);
             uint64_t cp = apply_manager.get_committing_seq();
@@ -3746,7 +3746,7 @@ again:
     lock.Unlock();
 }
 
-//# Æô¶¯Ò»¸ösync,Èç¹ûÓĞjournal,Ê²Ã´Ò²Ã»×ö
+//# å¯åŠ¨ä¸€ä¸ªsync,å¦‚æœæœ‰journal,ä»€ä¹ˆä¹Ÿæ²¡åš
 void FileStore::_start_sync()
 {
     if (!journal) {  // don't do a big sync if the journal is on
@@ -3756,7 +3756,7 @@ void FileStore::_start_sync()
         dout(10) << "start_sync - NOOP (journal is on)" << dendl;
     }
 }
-//# Ç¿ÖÆ½øĞĞÒ»¸ösync
+//# å¼ºåˆ¶è¿›è¡Œä¸€ä¸ªsync
 void FileStore::do_force_sync()
 {
     dout(10) << __func__ << dendl;
@@ -3764,7 +3764,7 @@ void FileStore::do_force_sync()
     force_sync = true;
     sync_cond.Signal();
 }
-//# ¿ªÊ¼Ò»´Îsync
+//# å¼€å§‹ä¸€æ¬¡sync
 void FileStore::start_sync(Context *onsafe)
 {
     Mutex::Locker l(lock);
@@ -3773,7 +3773,7 @@ void FileStore::start_sync(Context *onsafe)
     force_sync = true;
     dout(10) << "start_sync" << dendl;
 }
-//# ½øĞĞÒ»´Îsync,µÈ´ı·µ»Ø
+//# è¿›è¡Œä¸€æ¬¡sync,ç­‰å¾…è¿”å›
 void FileStore::sync()
 {
     Mutex l("FileStore::sync");

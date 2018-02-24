@@ -113,7 +113,7 @@ int GenericFileStoreBackend::detect_features()
     }
 
     // fiemap an extent inside that
-    if (!m_filestore_fiemap) {//# Ä¬ÈÏfiemapÊÇ¹Ø±ÕµÄ
+    if (!m_filestore_fiemap) {//# é»˜è®¤fiemapæ˜¯å…³é—­çš„
         dout(0) << "detect_features: FIEMAP ioctl is disabled via 'filestore fiemap' config option" << dendl;
         ioctl_fiemap = false;
     } else {
@@ -135,7 +135,7 @@ int GenericFileStoreBackend::detect_features()
     }
 
     // SEEK_DATA/SEEK_HOLE detection
-    if (!m_filestore_seek_data_hole) {  //# Ä¬ÈÏÊÇ¹Ø±ÕµÄ
+    if (!m_filestore_seek_data_hole) {  //# é»˜è®¤æ˜¯å…³é—­çš„
         dout(0) << "detect_features: SEEK_DATA/SEEK_HOLE is disabled via 'filestore seek data hole' config option" << dendl;
         seek_data_hole = false;
     } else {
@@ -162,7 +162,7 @@ int GenericFileStoreBackend::detect_features()
 #endif
     }
 
-    //splice detection  //# spliceÏµÍ³µ÷ÓÃ¼ì²â
+    //splice detection  //# spliceç³»ç»Ÿè°ƒç”¨æ£€æµ‹
 #ifdef CEPH_HAVE_SPLICE
     if (!m_filestore_splice) {
         int pipefd[2];
@@ -172,7 +172,7 @@ int GenericFileStoreBackend::detect_features()
             dout(0) << "detect_features: splice  pipe met error " << cpp_strerror(errno) << dendl;
         else {
             lseek(fd, 0, SEEK_SET);
-            r = splice(fd, &off_in, pipefd[1], NULL, 10, 0);//# ´ÓÓÉfdÖ¸ÏòµÄÎÄ¼þ¶ÁÈ¡Êý¾Ýµ½ÓÉpipefd[1]Ö¸ÏòµÄÄÚºË»º³åÇø,³ýÔÚÄÚºË¿Õ¼äºÍÓÃ»§¿Õ¼äÖ®¼äµÄÄÚ´æ¿½±´µÄ¿ªÏú
+            r = splice(fd, &off_in, pipefd[1], NULL, 10, 0);//# ä»Žç”±fdæŒ‡å‘çš„æ–‡ä»¶è¯»å–æ•°æ®åˆ°ç”±pipefd[1]æŒ‡å‘çš„å†…æ ¸ç¼“å†²åŒº,é™¤åœ¨å†…æ ¸ç©ºé—´å’Œç”¨æˆ·ç©ºé—´ä¹‹é—´çš„å†…å­˜æ‹·è´çš„å¼€é”€
             if (!(r < 0 && errno == EINVAL)) {
                 m_filestore_splice = true;
                 dout(0) << "detect_features: splice is supported" << dendl;
@@ -223,7 +223,7 @@ int GenericFileStoreBackend::detect_features()
     return 0;
 }
 
-//# ´´½¨ current Ä¿Â¼
+//# åˆ›å»º current ç›®å½•
 int GenericFileStoreBackend::create_current()
 {
     struct stat st;

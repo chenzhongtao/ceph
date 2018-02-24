@@ -412,7 +412,7 @@ public:
         } __attribute__ ((packed)) ;
 
         struct TransactionData {
-            __le64 ops; //# opÊıÄ¿
+            __le64 ops; //# opæ•°ç›®
             __le32 largest_data_len;
             __le32 largest_data_off;
             __le32 largest_data_off_in_tbl;
@@ -440,7 +440,7 @@ public:
 
         void *osr; // NULL on replay
 
-        bool use_tbl;   //use_tbl for encode/decode ¹¹Ôìº¯Êı³õÊ¼»¯Îªfalse 
+        bool use_tbl;   //use_tbl for encode/decode æ„é€ å‡½æ•°åˆå§‹åŒ–ä¸ºfalse 
         bufferlist tbl;
 
         map<coll_t, __le32> coll_index;
@@ -925,7 +925,7 @@ public:
         Op* _get_next_op()
         {
             if (op_ptr.length() == 0 || op_ptr.offset() >= op_ptr.length()) {
-                op_ptr = bufferptr(sizeof(Op) * OPS_PER_PTR);//# ÖØĞÂ·ÖÅä
+                op_ptr = bufferptr(sizeof(Op) * OPS_PER_PTR);//# é‡æ–°åˆ†é…
             }
             bufferptr ptr(op_ptr, 0, sizeof(Op));
             op_bl.append(ptr);
@@ -934,7 +934,7 @@ public:
 
             char* p = ptr.c_str();
             memset(p, 0, sizeof(Op));
-            return reinterpret_cast<Op*>(p);  //# reinterpret_castÓÃÀ´´¦ÀíÎŞ¹ØÀàĞÍÖ®¼äµÄ×ª»»
+            return reinterpret_cast<Op*>(p);  //# reinterpret_castç”¨æ¥å¤„ç†æ— å…³ç±»å‹ä¹‹é—´çš„è½¬æ¢
         }
         __le32 _get_coll_id(const coll_t& coll)
         {
@@ -1269,12 +1269,12 @@ public:
                 ::encode(op, tbl);
                 ::encode(cid, tbl);
             } else {
-                Op* _op = _get_next_op();//# ·ÖÅäÒ»¸öop
+                Op* _op = _get_next_op();//# åˆ†é…ä¸€ä¸ªop
                 _op->op = OP_MKCOLL;
                 _op->cid = _get_coll_id(cid);
                 _op->split_bits = bits;
             }
-            data.ops++; //# op¸öÊı¼ÓÒ»
+            data.ops++; //# opä¸ªæ•°åŠ ä¸€
         }
 
         /**
@@ -1763,7 +1763,7 @@ public:
     };
 
     // synchronous wrappers
-    //# Ìá½»ÊÂÎñ
+    //# æäº¤äº‹åŠ¡
     unsigned apply_transaction(Sequencer *osr, Transaction& t, Context *ondisk=0)
     {
         list<Transaction*> tls;

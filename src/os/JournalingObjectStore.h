@@ -19,7 +19,7 @@
 #include "Journal.h"
 #include "common/RWLock.h"
 
-//#FileStore ¼Ì³ĞÕâ¸öÀà
+//#FileStore ç»§æ‰¿è¿™ä¸ªç±»
 class JournalingObjectStore : public ObjectStore {
 protected:
   Journal *journal;
@@ -28,8 +28,8 @@ protected:
 
   class SubmitManager {
     Mutex lock;
-    uint64_t op_seq;      //# ÈÕÖ¾×îĞÂµÄseq = op_submitted»òop_submitted+1
-    uint64_t op_submitted;//# ÈÕÖ¾ÒÑ¾­Ìá½»µÄseq
+    uint64_t op_seq;      //# æ—¥å¿—æœ€æ–°çš„seq = op_submittedæˆ–op_submitted+1
+    uint64_t op_submitted;//# æ—¥å¿—å·²ç»æäº¤çš„seq
   public:
     SubmitManager() :
       lock("JOS::SubmitManager::lock", false, true, false, g_ceph_context),
@@ -37,7 +37,7 @@ protected:
     {}
     uint64_t op_submit_start();
     void op_submit_finish(uint64_t op);
-    //# ÉèÖÃÒÑ¾­Ìá½»µÄseq,replayÊ±ÉèÖÃ
+    //# è®¾ç½®å·²ç»æäº¤çš„seq,replayæ—¶è®¾ç½®
     void set_op_seq(uint64_t seq) {
       Mutex::Locker l(lock);
       op_submitted = op_seq = seq;
@@ -54,12 +54,12 @@ protected:
     Mutex apply_lock;
     bool blocked;
     Cond blocked_cond;
-    int open_ops; //# ÕıÔÚÌá½»µÄopÊı
+    int open_ops; //# æ­£åœ¨æäº¤çš„opæ•°
     uint64_t max_applied_seq;
 
     Mutex com_lock;
     map<version_t, vector<Context*> > commit_waiters;
-    uint64_t committing_seq, committed_seq;//# ÕâÊÇÌá½»Ğ´´ÅÅÌµÄ
+    uint64_t committing_seq, committed_seq;//# è¿™æ˜¯æäº¤å†™ç£ç›˜çš„
 
   public:
     ApplyManager(Journal *&j, Finisher &f) :
@@ -70,7 +70,7 @@ protected:
       max_applied_seq(0),
       com_lock("JOS::ApplyManager::com_lock", false, true, false, g_ceph_context),
       committing_seq(0), committed_seq(0) {}
-      //# ÖØĞÂÉèÖÃ
+      //# é‡æ–°è®¾ç½®
     void reset() {
       assert(open_ops == 0);
       assert(blocked == false);
@@ -96,7 +96,7 @@ protected:
       Mutex::Locker l(com_lock);
       return committing_seq;
     }
-    //# ³õÊ¼»¯ÒÔÌá½»µÄseq
+    //# åˆå§‹åŒ–ä»¥æäº¤çš„seq
     void init_seq(uint64_t fs_op_seq) {
       {
 	Mutex::Locker l(com_lock);

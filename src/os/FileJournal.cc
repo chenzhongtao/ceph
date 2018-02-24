@@ -46,7 +46,7 @@
 const static int64_t ONE_MEG(1 << 20);
 const static int CEPH_MINIMUM_BLOCK_SIZE(4096);
 
-//# ´ò¿ªjournalÎÄ¼ş
+//# æ‰“å¼€journalæ–‡ä»¶
 int FileJournal::_open(bool forwrite, bool create)
 {
     int flags, ret;
@@ -85,10 +85,10 @@ int FileJournal::_open(bool forwrite, bool create)
         goto out_fd;
     }
 
-    if (S_ISBLK(st.st_mode)) { //# ÊÇ·ñÊÇ¿éÉè±¸
+    if (S_ISBLK(st.st_mode)) { //# æ˜¯å¦æ˜¯å—è®¾å¤‡
         ret = _open_block_device();
     } else {
-        if (aio && !force_aio) { //# ²»ÊÇ¿éÉè±¸²»ÄÜÊ¹ÓÃaioÒªÊ¹ÓÃforce_aio
+        if (aio && !force_aio) { //# ä¸æ˜¯å—è®¾å¤‡ä¸èƒ½ä½¿ç”¨aioè¦ä½¿ç”¨force_aio
             derr << "FileJournal::_open: disabling aio for non-block journal.  Use "
                  << "journal_force_aio to force use of aio anyway" << dendl;
             aio = false;
@@ -128,7 +128,7 @@ out_fd:
     return ret;
 }
 
-//# ´ò¿ª¿éÉè±¸
+//# æ‰“å¼€å—è®¾å¤‡
 int FileJournal::_open_block_device()
 {
     int64_t bdev_sz = 0;
@@ -139,12 +139,12 @@ int FileJournal::_open_block_device()
     }
 
     /* Check for bdev_sz too small */
-    if (bdev_sz < ONE_MEG) { //# Ğ¡ÓÚ1M
+    if (bdev_sz < ONE_MEG) { //# å°äº1M
         dout(0) << __func__ << ": your block device must be at least "
                 << ONE_MEG << " bytes to be used for a Ceph journal." << dendl;
         return -EINVAL;
     }
-    //# ¿éÉè±¸»áºöÂÔÅäÖÃÎÄ¼şµÄÈÕÖ¾´óĞ¡
+    //# å—è®¾å¤‡ä¼šå¿½ç•¥é…ç½®æ–‡ä»¶çš„æ—¥å¿—å¤§å°
     dout(10) << __func__ << ": ignoring osd journal size. "
              << "We'll use the entire block device (size: " << bdev_sz << ")"
              << dendl;
@@ -152,7 +152,7 @@ int FileJournal::_open_block_device()
 
     block_size = CEPH_MINIMUM_BLOCK_SIZE;
 
-    if (g_conf->journal_discard) { //# »¹²»ÖªµÀÊ²Ã´¹¦ÄÜ
+    if (g_conf->journal_discard) { //# è¿˜ä¸çŸ¥é“ä»€ä¹ˆåŠŸèƒ½
         discard = block_device_support_discard(fn.c_str());
         dout(10) << fn << " support discard: " << (int)discard << dendl;
     }
@@ -160,7 +160,7 @@ int FileJournal::_open_block_device()
     return 0;
 }
 
-//# ¿ªÆô´ÅÅÌĞ´»º´æ
+//# å¼€å¯ç£ç›˜å†™ç¼“å­˜
 void FileJournal::_check_disk_write_cache() const
 {
     ostringstream hdparm_cmd;
@@ -235,13 +235,13 @@ done:
     ;
 }
 
-//# ´ò¿ªÈÕÖ¾ÎÄ¼ş
+//# æ‰“å¼€æ—¥å¿—æ–‡ä»¶
 int FileJournal::_open_file(int64_t oldsize, blksize_t blksize,
                             bool create)
 {
     int ret;
     int64_t conf_journal_sz(g_conf->osd_journal_size);
-    conf_journal_sz <<= 20; //# µ¥Î»M
+    conf_journal_sz <<= 20; //# å•ä½M
 
     if ((g_conf->osd_journal_size == 0) && (oldsize < ONE_MEG)) {
         derr << "I'm sorry, I don't know how large of a journal to create."
@@ -254,7 +254,7 @@ int FileJournal::_open_file(int64_t oldsize, blksize_t blksize,
         uint64_t newsize(g_conf->osd_journal_size);
         newsize <<= 20;
         dout(10) << "_open extending to " << newsize << " bytes" << dendl;
-        ret = ::ftruncate(fd, newsize); //# ¸Ä±äÎÄ¼ş´óĞ¡
+        ret = ::ftruncate(fd, newsize); //# æ”¹å˜æ–‡ä»¶å¤§å°
         if (ret < 0) {
             int err = errno;
             derr << "FileJournal::_open_file : unable to extend journal to "
@@ -262,7 +262,7 @@ int FileJournal::_open_file(int64_t oldsize, blksize_t blksize,
             return -err;
         }
 #ifdef HAVE_POSIX_FALLOCATE
-        ret = ::posix_fallocate(fd, 0, newsize); //# ·ÖÅä´óĞ¡
+        ret = ::posix_fallocate(fd, 0, newsize); //# åˆ†é…å¤§å°
         if (ret) {
             derr << "FileJournal::_open_file : unable to preallocation journal to "
                  << newsize << " bytes: " << cpp_strerror(ret) << dendl;
@@ -292,7 +292,7 @@ int FileJournal::_open_file(int64_t oldsize, blksize_t blksize,
     }
     block_size = MAX(blksize, (blksize_t)CEPH_MINIMUM_BLOCK_SIZE);//# 4K
 
-    if (create && g_conf->journal_zero_on_create) { //# ËùÓĞÊı¾İ³õÊ¼»¯Îª0
+    if (create && g_conf->journal_zero_on_create) { //# æ‰€æœ‰æ•°æ®åˆå§‹åŒ–ä¸º0
         derr << "FileJournal::_open_file : zeroing journal" << dendl;
         uint64_t write_size = 1 << 20;
         char *buf;
@@ -327,7 +327,7 @@ int FileJournal::_open_file(int64_t oldsize, blksize_t blksize,
 }
 
 // This can not be used on an active journal
-//# ÈÕÖ¾¼ì²â
+//# æ—¥å¿—æ£€æµ‹
 int FileJournal::check()
 {
     int ret;
@@ -356,7 +356,7 @@ done:
     return ret;
 }
 
-//# ´´½¨Ò»¸öJournal
+//# åˆ›å»ºä¸€ä¸ªJournal
 int FileJournal::create()
 {
     void *buf = 0;
@@ -374,14 +374,14 @@ int FileJournal::create()
     header.flags = header_t::FLAG_CRC;  // enable crcs on any new journal. //# 1
     header.fsid = fsid;
     header.max_size = max_size; //# 104857600
-    header.block_size = block_size;¡¡//# 4096
+    header.block_size = block_size;ã€€//# 4096
     if (g_conf->journal_block_align || directio)
-        header.alignment = block_size;¡¡//# 4096
+        header.alignment = block_size;ã€€//# 4096
     else
         header.alignment = 16;  // at least stay word aligned on 64bit machines...
 
-    header.start = get_top(); //# ¿ªÊ¼Ğ´ÈÕÖ¾µÄÎ»ÖÃ, header±£´æÔÚÇ°ÃæµÄblock_sizeÖĞ
-    header.start_seq = 0;  //# ÏÖÔÚµÄseqºÅ
+    header.start = get_top(); //# å¼€å§‹å†™æ—¥å¿—çš„ä½ç½®, headerä¿å­˜åœ¨å‰é¢çš„block_sizeä¸­
+    header.start_seq = 0;  //# ç°åœ¨çš„seqå·
 
     print_header(header);
 
@@ -391,7 +391,7 @@ int FileJournal::create()
     memset(zero_buf, 0, header.alignment);
 
     bp = prepare_header();
-    //# °ÑheaderĞ´½øÉè±¸
+    //# æŠŠheaderå†™è¿›è®¾å¤‡
     if (TEMP_FAILURE_RETRY(::pwrite(fd, bp.c_str(), bp.length(), 0)) < 0) {
         ret = errno;
         derr << "FileJournal::create : create write header error "
@@ -406,7 +406,7 @@ int FileJournal::create()
              << " bytes of memory: " << cpp_strerror(ret) << dendl;
         goto close_fd;
     }
-    memset(buf, 0, block_size);//# Ğ´µÚ¶ş¸ö4K,È«Îª0 
+    memset(buf, 0, block_size);//# å†™ç¬¬äºŒä¸ª4K,å…¨ä¸º0 
     if (TEMP_FAILURE_RETRY(::pwrite(fd, buf, block_size, get_top())) < 0) {
         ret = errno;
         derr << "FileJournal::create: error zeroing first " << block_size
@@ -414,7 +414,7 @@ int FileJournal::create()
         goto free_buf;
     }
 
-    needed_space = ((int64_t)g_conf->osd_max_write_size) << 20; //# Ä¬ÈÏ90M
+    needed_space = ((int64_t)g_conf->osd_max_write_size) << 20; //# é»˜è®¤90M
     needed_space += (2 * sizeof(entry_header_t)) + get_top();
     if (header.max_size - header.start < needed_space) {
         derr << "FileJournal::create: OSD journal is not large enough to hold "
@@ -442,7 +442,7 @@ done:
 }
 
 // This can not be used on an active journal
-//# »ñÈ¡ÈÕÖ¾ÎÄ¼şµÄfsid,ÈÕÖ¾²»ÄÜÕıÔÚÊ¹ÓÃ
+//# è·å–æ—¥å¿—æ–‡ä»¶çš„fsid,æ—¥å¿—ä¸èƒ½æ­£åœ¨ä½¿ç”¨
 int FileJournal::peek_fsid(uuid_d& fsid)
 {
     assert(fd == -1);
@@ -457,7 +457,7 @@ out:
     close();
     return r;
 }
-//# °ÑÈÕÖ¾¶Áµ½Õâ¸öÖ¸¶¨µÄseq,Ö¸¶¨Îªcommit_op_seq,ËùÒÔ»á°ÑÒÑ¾­Ğ´µÄÈÕÖ¾µ«»¹²»ÄÜ¸²¸ÇµÄÈÕÖ¾¶Áµ½ journalq,´Óheader.start¿ªÊ¼¶Á
+//# æŠŠæ—¥å¿—è¯»åˆ°è¿™ä¸ªæŒ‡å®šçš„seq,æŒ‡å®šä¸ºcommit_op_seq,æ‰€ä»¥ä¼šæŠŠå·²ç»å†™çš„æ—¥å¿—ä½†è¿˜ä¸èƒ½è¦†ç›–çš„æ—¥å¿—è¯»åˆ° journalq,ä»header.startå¼€å§‹è¯»
 int FileJournal::open(uint64_t fs_op_seq)
 {
     dout(2) << "open " << fn << " fsid " << fsid << " fs_op_seq " << fs_op_seq << dendl;
@@ -517,7 +517,7 @@ int FileJournal::open(uint64_t fs_op_seq)
     // looks like a valid header.
     write_pos = 0;  // not writeable yet
 
-    //# ÈÕÖ¾ÒÔÌá½»µ½ÄÇ¸öseq
+    //# æ—¥å¿—ä»¥æäº¤åˆ°é‚£ä¸ªseq
     journaled_seq = header.committed_up_to;
 
     // find next entry
@@ -526,7 +526,7 @@ int FileJournal::open(uint64_t fs_op_seq)
 
     // last_committed_seq is 1 before the start of the journal or
     // 0 if the start is 0
-    //#  fs_op_seq  = cat /current/commit_op_seq ,ÒÑ¾­Ğ´Èë´ÅÅÌµÄseq
+    //#  fs_op_seq  = cat /current/commit_op_seq ,å·²ç»å†™å…¥ç£ç›˜çš„seq
     last_committed_seq = seq > 0 ? seq - 1 : seq;
     if (last_committed_seq < fs_op_seq) {
         dout(2) << "open advancing committed_seq " << last_committed_seq
@@ -565,7 +565,7 @@ void FileJournal::_close(int fd) const
 {
     VOID_TEMP_FAILURE_RETRY(::close(fd));
 }
-//# ¹Ø±ÕÈÕÖ¾
+//# å…³é—­æ—¥å¿—
 void FileJournal::close()
 {
     dout(1) << "close " << fn << dendl;
@@ -581,7 +581,7 @@ void FileJournal::close()
     fd = -1;
 }
 
-//# ´òÓ¡ÈÕÖ¾ÄÚÈİµ½ out
+//# æ‰“å°æ—¥å¿—å†…å®¹åˆ° out
 int FileJournal::dump(ostream& out)
 {
     return _dump(out, false);
@@ -693,7 +693,7 @@ int FileJournal::_fdump(Formatter &f, bool simple)
     return err;
 }
 
-//# Æô¶¯Ğ´Ïß³Ì
+//# å¯åŠ¨å†™çº¿ç¨‹
 void FileJournal::start_writer()
 {
     write_stop = false;
@@ -704,7 +704,7 @@ void FileJournal::start_writer()
         write_finish_thread.create();
 #endif
 }
-//# ÍË³öĞ´Ïß³Ì
+//# é€€å‡ºå†™çº¿ç¨‹
 void FileJournal::stop_writer()
 {
     // Do nothing if writer already stopped or never started
@@ -739,17 +739,17 @@ void FileJournal::stop_writer()
 }
 
 
-//# ´òÓ¡headĞÅÏ¢
+//# æ‰“å°headä¿¡æ¯
 void FileJournal::print_header(const header_t &header) const
 {
     dout(10) << "header: block_size " << header.block_size
              << " alignment " << header.alignment
-             << " max_size " << header.max_size //# ÈÕÖ¾ÎÄ¼şµÄ´óĞ¡
+             << " max_size " << header.max_size //# æ—¥å¿—æ–‡ä»¶çš„å¤§å°
              << dendl;
     dout(10) << "header: start " << header.start << dendl;
     dout(10) << " write_pos " << write_pos << dendl;
 }
-//# ¶ÁÈ¡headerµÄĞÅÏ¢,header±£´æÔÚÇ°ÃæµÄblock_sizeÖĞ
+//# è¯»å–headerçš„ä¿¡æ¯,headerä¿å­˜åœ¨å‰é¢çš„block_sizeä¸­
 int FileJournal::read_header(header_t *hdr) const
 {
     dout(10) << "read_header" << dendl;
@@ -770,14 +770,14 @@ int FileJournal::read_header(header_t *hdr) const
     if (bp.length() != (size_t)r) {
         // r will be always less or equal than bp.length
         bpdata += r;
-        memset(bpdata, 0, bp.length() - r); //# ºóÃæ²¹0
+        memset(bpdata, 0, bp.length() - r); //# åé¢è¡¥0
     }
 
     bl.push_back(bp);
 
     try {
         bufferlist::iterator p = bl.begin();
-        ::decode(*hdr, p);//# ½âÂë
+        ::decode(*hdr, p);//# è§£ç 
     } catch (buffer::error& e) {
         derr << "read_header error decoding journal header" << dendl;
         return -EINVAL;
@@ -800,7 +800,7 @@ int FileJournal::read_header(header_t *hdr) const
 
     return 0;
 }
-//# °ÑheaderĞòÁĞ»¯,4K²¹Æë
+//# æŠŠheaderåºåˆ—åŒ–,4Kè¡¥é½
 bufferptr FileJournal::prepare_header()
 {
     bufferlist bl;
@@ -818,7 +818,7 @@ bufferptr FileJournal::prepare_header()
     memset(data, 0, bp.length()-bl.length());
     return bp;
 }
-//# Ğ´Í·²¿(ÍË³öÇ°°Ñ×îĞÂµÄÍ·²¿ĞÅÏ¢Ğ´½øÈ¥)
+//# å†™å¤´éƒ¨(é€€å‡ºå‰æŠŠæœ€æ–°çš„å¤´éƒ¨ä¿¡æ¯å†™è¿›å»)
 void FileJournal::write_header_sync()
 {
     Mutex::Locker locker(write_lock);
@@ -827,7 +827,7 @@ void FileJournal::write_header_sync()
     do_write(bl);
     dout(20) << __func__ << " finish" << dendl;
 }
-//# ÅĞ¶ÏÈÕÖ¾ÊÇ·ñÂúÁË
+//# åˆ¤æ–­æ—¥å¿—æ˜¯å¦æ»¡äº†
 int FileJournal::check_for_full(uint64_t seq, off64_t pos, off64_t size)//# 1 4096 8192
 {
     // already full?
@@ -835,10 +835,10 @@ int FileJournal::check_for_full(uint64_t seq, off64_t pos, off64_t size)//# 1 40
         return -ENOSPC;
 
     // take 1 byte off so that we only get pos == header.start on EMPTY, never on FULL.
-    //# ÈÕÖ¾ÊÇ¸ö»·,pos == header.start±íÊ¾¿Õ,pos == header.start-1 ±íÊ¾ÂúÁË
-    off64_t room; //# ¼ÆËã»¹¿ÉÒÔĞ´µÄ´óĞ¡
+    //# æ—¥å¿—æ˜¯ä¸ªç¯,pos == header.startè¡¨ç¤ºç©º,pos == header.start-1 è¡¨ç¤ºæ»¡äº†
+    off64_t room; //# è®¡ç®—è¿˜å¯ä»¥å†™çš„å¤§å°
     if (pos >= header.start)
-        room = (header.max_size - pos) + (header.start - get_top()) - 1; //# posÖ®ºó¿ÉÒÔĞ´,header.startÖ®Ç°¿ÉÒÔĞ´(header.start ºÍ posÖ®¼äÊÇ»¹²»¿ÉÒÔ¸²¸ÇµÄÈÕÖ¾²¿·Ö)
+        room = (header.max_size - pos) + (header.start - get_top()) - 1; //# posä¹‹åå¯ä»¥å†™,header.startä¹‹å‰å¯ä»¥å†™(header.start å’Œ posä¹‹é—´æ˜¯è¿˜ä¸å¯ä»¥è¦†ç›–çš„æ—¥å¿—éƒ¨åˆ†)
     else
         room = header.start - pos - 1;
     dout(10) << "room " << room << " max_size " << max_size << " pos " << pos << " header.start " << header.start
@@ -848,14 +848,14 @@ int FileJournal::check_for_full(uint64_t seq, off64_t pos, off64_t size)//# 1 40
         if (room >= (header.max_size >> 1) &&
             room - size < (header.max_size >> 1)) {
             dout(10) << " passing half full mark, triggering commit" << dendl;
-			//# ÈÕÖ¾½«³¬¹ıÒ»°ë,·¢ËÍÒ»´ÎsyncĞÅºÅ
+			//# æ—¥å¿—å°†è¶…è¿‡ä¸€åŠ,å‘é€ä¸€æ¬¡syncä¿¡å·
             do_sync_cond->SloppySignal();  // initiate a real commit so we can trim
         }
     }
 
     if (room >= size) {
         dout(10) << "check_for_full at " << pos << " : " << size << " < " << room << dendl;
-        if (pos + size > header.max_size) //# ÊÇ·ñĞèÒª´ÓÇ°ÃæÍù»ØĞ´
+        if (pos + size > header.max_size) //# æ˜¯å¦éœ€è¦ä»å‰é¢å¾€å›å†™
             must_write_header = true;
         return 0;
     }
@@ -867,12 +867,12 @@ int FileJournal::check_for_full(uint64_t seq, off64_t pos, off64_t size)//# 1 40
             << dendl;
 
     off64_t max = header.max_size - get_top();
-    if (size > max)//# ÅĞ¶Ï×ÜµÄÈÕÖ¾¿Õ¼äÊÇ·ñÌ«Ğ¡ÁË
+    if (size > max)//# åˆ¤æ–­æ€»çš„æ—¥å¿—ç©ºé—´æ˜¯å¦å¤ªå°äº†
         dout(0) << "JOURNAL TOO SMALL: continuing, but slow: item " << size << " > journal " << max << " (usable)" << dendl;
 
     return -ENOSPC;
 }
-//# Ğ´×¼±¸,ºÏ²¢¶à¸öĞ´
+//# å†™å‡†å¤‡,åˆå¹¶å¤šä¸ªå†™
 int FileJournal::prepare_multi_write(bufferlist& bl, uint64_t& orig_ops, uint64_t& orig_bytes)
 {
     // gather queued writes
@@ -887,21 +887,21 @@ int FileJournal::prepare_multi_write(bufferlist& bl, uint64_t& orig_ops, uint64_
     while (!writeq_empty()) {
         int r = prepare_single_write(bl, queue_pos, orig_ops, orig_bytes);
         if (r == -ENOSPC) {
-            if (orig_ops) //#  °ÑÖ®Ç°ºÏ²¢µÄÏÈĞ´½øÈ¥
+            if (orig_ops) //#  æŠŠä¹‹å‰åˆå¹¶çš„å…ˆå†™è¿›å»
                 break;         // commit what we have
 
             if (logger)
                 logger->inc(l_os_j_full);
 
             if (wait_on_full) {
-				//# µÈ´ıÈÕÖ¾Ğ´
+				//# ç­‰å¾…æ—¥å¿—å†™
                 dout(20) << "prepare_multi_write full on first entry, need to wait" << dendl;
-            } else {//# ÖØĞÂÆô¶¯ÈÕÖ¾
+            } else {//# é‡æ–°å¯åŠ¨æ—¥å¿—
                 dout(20) << "prepare_multi_write full on first entry, restarting journal" << dendl;
 
                 // throw out what we have so far
-                full_state = FULL_FULL; //# ±êÖ¾ÈÕÖ¾Âú
-                //# °Ñ¶ÓÁĞÀïµÄÈÕÖ¾¶¼¶ªÆú ???
+                full_state = FULL_FULL; //# æ ‡å¿—æ—¥å¿—æ»¡
+                //# æŠŠé˜Ÿåˆ—é‡Œçš„æ—¥å¿—éƒ½ä¸¢å¼ƒ ???
                 while (!writeq_empty()) {
                     put_throttle(1, peek_write().bl.length());
                     pop_write();
@@ -909,16 +909,16 @@ int FileJournal::prepare_multi_write(bufferlist& bl, uint64_t& orig_ops, uint64_
                 print_header(header);
             }
 
-            return -ENOSPC;  // hrm, full on first op  µÚÒ»¸ö²Ù×÷¾ÍÂúÁË
+            return -ENOSPC;  // hrm, full on first op  ç¬¬ä¸€ä¸ªæ“ä½œå°±æ»¡äº†
         }
 
-        if (eleft) {//# Ã¿ºÏ²¢Ò»Ïî¾Í¼õÒ»,×î¶àºÏ²¢100Ïî
+        if (eleft) {//# æ¯åˆå¹¶ä¸€é¡¹å°±å‡ä¸€,æœ€å¤šåˆå¹¶100é¡¹
             if (--eleft == 0) {
                 dout(20) << "prepare_multi_write hit max events per write " << g_conf->journal_max_write_entries << dendl;
                 break;
             }
         }
-        if (bmax) { //# ºÏ²¢¶à¸öĞ´³¤¶È³¬¹ı32M¾ÍÏÈÍË³öÑ­»·
+        if (bmax) { //# åˆå¹¶å¤šä¸ªå†™é•¿åº¦è¶…è¿‡32Må°±å…ˆé€€å‡ºå¾ªç¯
             if (bl.length() >= bmax) {
                 dout(20) << "prepare_multi_write hit max write size " << g_conf->journal_max_write_bytes << dendl;
                 break;
@@ -950,7 +950,7 @@ void FileJournal::queue_write_fin(uint64_t seq, Context *fin)
   }
 }
 */
-//# °Ñcompletions¶ÓÁĞÖĞ,seqĞ¡ÓÚµÈÓÚÎÒµÄ,³öÁĞ,·Åµ½finisher_queue,Ö´ĞĞ»Øµ÷º¯Êı
+//# æŠŠcompletionsé˜Ÿåˆ—ä¸­,seqå°äºç­‰äºæˆ‘çš„,å‡ºåˆ—,æ”¾åˆ°finisher_queue,æ‰§è¡Œå›è°ƒå‡½æ•°
 void FileJournal::queue_completions_thru(uint64_t seq)
 {
     assert(finisher_lock.is_locked());
@@ -976,23 +976,23 @@ void FileJournal::queue_completions_thru(uint64_t seq)
     }
     finisher_cond.Signal();
 }
-//# Ğ´×¼±¸,Ò»¸öĞ´
+//# å†™å‡†å¤‡,ä¸€ä¸ªå†™
 int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64_t& orig_ops, uint64_t& orig_bytes)
 {
     // grab next item
     write_item &next_write = peek_write();
     uint64_t seq = next_write.seq;
     bufferlist &ebl = next_write.bl;
-    unsigned head_size = sizeof(entry_header_t);//# ÓĞÁ½ÖÖÍ·²¿ entry_header_t ºÍ header_t
-    off64_t base_size = 2*head_size + ebl.length(); //# Í·²¿ĞèÒª±£´æÁ½·İ ? ¿´ do_read_entry
+    unsigned head_size = sizeof(entry_header_t);//# æœ‰ä¸¤ç§å¤´éƒ¨ entry_header_t å’Œ header_t
+    off64_t base_size = 2*head_size + ebl.length(); //# å¤´éƒ¨éœ€è¦ä¿å­˜ä¸¤ä»½ ? çœ‹ do_read_entry
 
-    int alignment = next_write.alignment; // we want to start ebl with this alignment ,ÏëÈÃÊı¾İÊÇalignment¶ÔÆëµÄ
+    int alignment = next_write.alignment; // we want to start ebl with this alignment ,æƒ³è®©æ•°æ®æ˜¯alignmentå¯¹é½çš„
     unsigned pre_pad = 0;
-    if (alignment >= 0)  //# -1±íÊ¾²»ÓÃ¶ÔÆë,Õâ¸ö¶ÔÆëÊÇËµÈÕÖ¾ÖĞÊı¾İ²¿·ÖµÄ¶ÔÆë,ÒòÎªÊı¾İÇ°ÃæÓĞÒ»¸öÍ·²¿,ËùÒÔÒª¼õÈ¥Ò»¸öÍ·²¿ÏÈ
-		//# 4056   (0-40) & (4095)   //#×îÀË·Ñ¿Õ¼ä 
+    if (alignment >= 0)  //# -1è¡¨ç¤ºä¸ç”¨å¯¹é½,è¿™ä¸ªå¯¹é½æ˜¯è¯´æ—¥å¿—ä¸­æ•°æ®éƒ¨åˆ†çš„å¯¹é½,å› ä¸ºæ•°æ®å‰é¢æœ‰ä¸€ä¸ªå¤´éƒ¨,æ‰€ä»¥è¦å‡å»ä¸€ä¸ªå¤´éƒ¨å…ˆ
+		//# 4056   (0-40) & (4095)   //#æœ€æµªè´¹ç©ºé—´ 
         pre_pad = ((unsigned int)alignment - (unsigned int)head_size) & ~CEPH_PAGE_MASK;//# ~CEPH_PAGE_MASK = pagesize -1 
     off64_t size = ROUND_UP_TO(base_size + pre_pad, header.alignment);//# 8192
-    unsigned post_pad = size - base_size - pre_pad;//#¡¡4051
+    unsigned post_pad = size - base_size - pre_pad;//#ã€€4051
     
 
     int r = check_for_full(seq, queue_pos, size);
@@ -1010,7 +1010,7 @@ int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64
              << " (ebl alignment " << alignment << ")"
              << dendl;
 
-    // add it this entry Ìí¼ÓentryÍ·²¿,ÓĞÁ½ÖÖÍ·²¿
+    // add it this entry æ·»åŠ entryå¤´éƒ¨,æœ‰ä¸¤ç§å¤´éƒ¨
     entry_header_t h;
     memset(&h, 0, sizeof(h));
     h.seq = seq;
@@ -1021,18 +1021,18 @@ int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64
     h.crc32c = ebl.crc32c(0);
 
 	//# header_len + pre_pad + data_len + post_pad + header_len
-    bl.append((const char*)&h, sizeof(h));//# Ç°ÃæĞ´Í·²¿
+    bl.append((const char*)&h, sizeof(h));//# å‰é¢å†™å¤´éƒ¨
     if (pre_pad) {
-        bufferptr bp = buffer::create_static(pre_pad, zero_buf);//# ²¹Áã
+        bufferptr bp = buffer::create_static(pre_pad, zero_buf);//# è¡¥é›¶
         bl.push_back(bp);
     }
     bl.claim_append(ebl, buffer::list::CLAIM_ALLOW_NONSHAREABLE); // potential zero-copy
 
-    if (h.post_pad) {//# ºóÃæ²¹Áã¶ÔÆë
+    if (h.post_pad) {//# åé¢è¡¥é›¶å¯¹é½
         bufferptr bp = buffer::create_static(post_pad, zero_buf);
         bl.push_back(bp);
     }
-    bl.append((const char*)&h, sizeof(h));//# ºóÃæĞ´Í·²¿ ?
+    bl.append((const char*)&h, sizeof(h));//# åé¢å†™å¤´éƒ¨ ?
 
     if (next_write.tracked_op)
         next_write.tracked_op->mark_event("write_thread_in_journal_buffer");
@@ -1040,16 +1040,16 @@ int FileJournal::prepare_single_write(bufferlist& bl, off64_t& queue_pos, uint64
     // pop from writeq
     pop_write();
     journalq.push_back(pair<uint64_t,off64_t>(seq, queue_pos));
-	//# ¸üĞÂwriting_seq
+	//# æ›´æ–°writing_seq
     writing_seq = seq;
-	//# ¸üĞÂqueue_pos
+	//# æ›´æ–°queue_pos
     queue_pos += size;
     if (queue_pos >= header.max_size)
         queue_pos = queue_pos + get_top() - header.max_size;
 
     return 0;
 }
-//# ¶ÔÆë
+//# å¯¹é½
 void FileJournal::align_bl(off64_t pos, bufferlist& bl)
 {
     // make sure list segments are page aligned
@@ -1064,7 +1064,7 @@ void FileJournal::align_bl(off64_t pos, bufferlist& bl)
         assert((pos & (CEPH_MINIMUM_BLOCK_SIZE - 1)) == 0);
     }
 }
-//# Ğ´Êı¾İµ½ÈÕÖ¾
+//# å†™æ•°æ®åˆ°æ—¥å¿—
 int FileJournal::write_bl(off64_t& pos, bufferlist& bl)
 {
     int ret;
@@ -1086,7 +1086,7 @@ int FileJournal::write_bl(off64_t& pos, bufferlist& bl)
     return 0;
 }
 
-//# °ÑºÏ²¢µÄÈÕÖ¾Ğ´½øÈ¥
+//# æŠŠåˆå¹¶çš„æ—¥å¿—å†™è¿›å»
 void FileJournal::do_write(bufferlist& bl)
 {
     // nothing to do?
@@ -1116,14 +1116,14 @@ void FileJournal::do_write(bufferlist& bl)
 
     // Adjust write_pos
     align_bl(pos, bl);
-	//# ¸üĞÂwrite_pos
+	//# æ›´æ–°write_pos
     write_pos += bl.length();
     if (write_pos >= header.max_size)
         write_pos = write_pos - header.max_size + get_top();
 
     write_lock.Unlock();
 
-    // split? ÊÇ·ñĞèÒª²ğ·Ö
+    // split? æ˜¯å¦éœ€è¦æ‹†åˆ†
     off64_t split = 0;
     if (pos + bl.length() > header.max_size) {
         bufferlist first, second;
@@ -1140,7 +1140,7 @@ void FileJournal::do_write(bufferlist& bl)
         pos = get_top();
         // header too?
         if (hbp.length()) {
-			//# ÈçºÎĞèÒªĞ´Í·²¿,°ÑÍ·²¿ºÏ²¢Ò»ÆğĞ´Èë
+			//# å¦‚ä½•éœ€è¦å†™å¤´éƒ¨,æŠŠå¤´éƒ¨åˆå¹¶ä¸€èµ·å†™å…¥
             // be sneaky: include the header in the second fragment
             second.push_front(hbp);
             pos = 0;          // we included the header
@@ -1149,13 +1149,13 @@ void FileJournal::do_write(bufferlist& bl)
         // do_read_entry() won't even get a valid entry_header_t if there
         // is a crash between the two writes.
         orig_pos = pos;
-        if (write_bl(pos, second)) {//# Ğ´ºóÃæ²¿·Ö
+        if (write_bl(pos, second)) {//# å†™åé¢éƒ¨åˆ†
             derr << "FileJournal::do_write: write_bl(pos=" << orig_pos
                  << ") failed" << dendl;
             ceph_abort();
         }
         orig_pos = first_pos;
-        if (write_bl(first_pos, first)) {//# Ğ´Ç°Ãæ²¿·Ö
+        if (write_bl(first_pos, first)) {//# å†™å‰é¢éƒ¨åˆ†
             derr << "FileJournal::do_write: write_bl(pos=" << orig_pos
                  << ") failed" << dendl;
             ceph_abort();
@@ -1164,7 +1164,7 @@ void FileJournal::do_write(bufferlist& bl)
     } else {
         // header too?
         if (hbp.length()) {
-			//# Ğ´Í·²¿
+			//# å†™å¤´éƒ¨
             if (TEMP_FAILURE_RETRY(::pwrite(fd, hbp.c_str(), hbp.length(), 0)) < 0) {
                 int err = errno;
                 derr << "FileJournal::do_write: pwrite(fd=" << fd
@@ -1225,7 +1225,7 @@ void FileJournal::do_write(bufferlist& bl)
 
     {
         Mutex::Locker locker(finisher_lock);
-		//# ÒÑ¾­Ğ´ÈëÈÕÖ¾ÎÄ¼şµÄseq
+		//# å·²ç»å†™å…¥æ—¥å¿—æ–‡ä»¶çš„seq
         journaled_seq = writing_seq;
 
         // kick finisher?
@@ -1239,14 +1239,14 @@ void FileJournal::do_write(bufferlist& bl)
                          << " due to completion plug" << dendl;
             } else {
                 dout(20) << "do_write queueing finishers through seq " << journaled_seq << dendl;
-				//# µ÷ÓÃ»Øµ÷º¯Êı
+				//# è°ƒç”¨å›è°ƒå‡½æ•°
                 queue_completions_thru(journaled_seq);
             }
         }
     }
 }
 
-//# µÈ´ıËùÓĞ»Øµ÷Íê³É
+//# ç­‰å¾…æ‰€æœ‰å›è°ƒå®Œæˆ
 void FileJournal::flush()
 {
     dout(10) << "waiting for completions to empty" << dendl;
@@ -1260,7 +1260,7 @@ void FileJournal::flush()
     dout(10) << "flush done" << dendl;
 }
 
-//# ÈÕÖ¾Ğ´Ïß³ÌµÄÖ÷º¯Êı
+//# æ—¥å¿—å†™çº¿ç¨‹çš„ä¸»å‡½æ•°
 void FileJournal::write_thread_entry()
 {
     dout(10) << "write_thread_entry start" << dendl;
@@ -1327,7 +1327,7 @@ void FileJournal::write_thread_entry()
                 print_header(header);
                 r = 0;
             } else {
-             	//# ÈÕÖ¾ÂúÁË.ÔÚÕâÀïµÈ´ı
+             	//# æ—¥å¿—æ»¡äº†.åœ¨è¿™é‡Œç­‰å¾…
                 dout(20) << "write_thread_entry full, going to sleep (waiting for commit)" << dendl;
                 commit_cond.Wait(write_lock);
                 dout(20) << "write_thread_entry woke up" << dendl;
@@ -1498,7 +1498,7 @@ int FileJournal::write_aio_bl(off64_t& pos, bufferlist& bl, uint64_t seq)
     return 0;
 }
 #endif
-//# HAVE_LIBAIO ²ÅÓĞÓÃµ½
+//# HAVE_LIBAIO æ‰æœ‰ç”¨åˆ°
 void FileJournal::write_finish_thread_entry()
 {
 #ifdef HAVE_LIBAIO
@@ -1598,7 +1598,7 @@ void FileJournal::check_aio_completion()
 }
 #endif
 
-//# Ìá½»Ò»ÏîÈÕÖ¾
+//# æäº¤ä¸€é¡¹æ—¥å¿—
 void FileJournal::submit_entry(uint64_t seq, bufferlist& e, int alignment,
                                Context *oncommit, TrackedOpRef osd_op)
 {
@@ -1607,7 +1607,7 @@ void FileJournal::submit_entry(uint64_t seq, bufferlist& e, int alignment,
             << " len " << e.length()
             << " (" << oncommit << ")" << dendl;
     assert(e.length() > 0);
-	//# ½ÚÁ÷¿ØÖÆ
+	//# èŠ‚æµæ§åˆ¶
     throttle_ops.take(1);
     throttle_bytes.take(e.length());
     if (osd_op)
@@ -1622,29 +1622,29 @@ void FileJournal::submit_entry(uint64_t seq, bufferlist& e, int alignment,
     {
         Mutex::Locker l1(writeq_lock);  // ** lock **
         Mutex::Locker l2(completions_lock);  // ** lock **
-        completions.push_back(  //#¡¡committed_thru¡¡»áÓÃµ½
+        completions.push_back(  //#ã€€committed_thruã€€ä¼šç”¨åˆ°
             completion_item(
                 seq, oncommit, ceph_clock_now(g_ceph_context), osd_op));
         if (writeq.empty())
             writeq_cond.Signal();
-		//# eµÄÊı¾İ»á±»ÒÆ×ß,×Ô¼º±äÎª¿Õ
+		//# eçš„æ•°æ®ä¼šè¢«ç§»èµ°,è‡ªå·±å˜ä¸ºç©º
         writeq.push_back(write_item(seq, e, alignment, osd_op));
     }
 }
-//# Ğ´¶ÓÁĞÊÇ·ñÎª¿Õ
+//# å†™é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
 bool FileJournal::writeq_empty()
 {
     Mutex::Locker locker(writeq_lock);
     return writeq.empty();
 }
-//# »ñÈ¡ÏÂÒ»¸öĞ´µÄÏî
+//# è·å–ä¸‹ä¸€ä¸ªå†™çš„é¡¹
 FileJournal::write_item &FileJournal::peek_write()
 {
     assert(write_lock.is_locked());
     Mutex::Locker locker(writeq_lock);
     return writeq.front();
 }
-//# ³ö¶ÓÁĞ
+//# å‡ºé˜Ÿåˆ—
 void FileJournal::pop_write()
 {
     assert(write_lock.is_locked());
@@ -1687,7 +1687,7 @@ void FileJournal::commit_start(uint64_t seq)
 /*
  *send discard command to joural block deivce
  */
- //# ¿éÉè±¸¿ÉÒÔ¶ªÆúµÄÊı¾İÒªÉèÖÃÒ»ÏÂ
+ //# å—è®¾å¤‡å¯ä»¥ä¸¢å¼ƒçš„æ•°æ®è¦è®¾ç½®ä¸€ä¸‹
 void FileJournal::do_discard(int64_t offset, int64_t end)
 {
     dout(10) << __func__ << "trim(" << offset << ", " << end << dendl;
@@ -1702,17 +1702,17 @@ void FileJournal::do_discard(int64_t offset, int64_t end)
             dout(1) << __func__ << "ioctl(BLKDISCARD) error:" << cpp_strerror(errno) << dendl;
 }
 
-//# ÒÔÌá½»µ½seq,¸üĞÂĞÅÏ¢,±êÖ¾ÈÕÖ¾¿ÉÒÔ¶ªÆúÁË
+//# ä»¥æäº¤åˆ°seq,æ›´æ–°ä¿¡æ¯,æ ‡å¿—æ—¥å¿—å¯ä»¥ä¸¢å¼ƒäº†
 void FileJournal::committed_thru(uint64_t seq)
 {
     Mutex::Locker locker(write_lock);
-	//# ÒÑ¾­Ìá½»¹ıÁË,Ö±½Óassert
+	//# å·²ç»æäº¤è¿‡äº†,ç›´æ¥assert
     if (seq < last_committed_seq) {
         dout(5) << "committed_thru " << seq << " < last_committed_seq " << last_committed_seq << dendl;
         assert(seq >= last_committed_seq);
         return;
     }
-	//# ¸ÕºÃµÈÓÚ,Ö±½Ó·µ»Ø
+	//# åˆšå¥½ç­‰äº,ç›´æ¥è¿”å›
     if (seq == last_committed_seq) {
         dout(5) << "committed_thru " << seq << " == last_committed_seq " << last_committed_seq << dendl;
         return;
@@ -1725,24 +1725,24 @@ void FileJournal::committed_thru(uint64_t seq)
     {
         Mutex::Locker locker(finisher_lock);
         queue_completions_thru(seq);
-		//# plug_journal_completions ³õÊ¼Îªfalse FULL_WAITÊ±Îªtrue
-		//# seq >= header.start_seq ±íÊ¾¿ªÊ¼Ë¢ÈÕÖ¾ÁË,²»ÓÃ×èÈûÈÕÖ¾»Øµ÷
+		//# plug_journal_completions åˆå§‹ä¸ºfalse FULL_WAITæ—¶ä¸ºtrue
+		//# seq >= header.start_seq è¡¨ç¤ºå¼€å§‹åˆ·æ—¥å¿—äº†,ä¸ç”¨é˜»å¡æ—¥å¿—å›è°ƒ
         if (plug_journal_completions && seq >= header.start_seq) {
             dout(10) << " removing completion plug, queuing completions thru journaled_seq " << journaled_seq << dendl;
             plug_journal_completions = false;
-			//# ÈÕÖ¾ÂúÁË,Ö±½Ó¼Ó´óµ½journaled_seq
+			//# æ—¥å¿—æ»¡äº†,ç›´æ¥åŠ å¤§åˆ°journaled_seq
             queue_completions_thru(journaled_seq);
         }
     }
 
     // adjust start pointer 
-    //# ¶ªÆúÒÑÌá½»µÄjournalq
+    //# ä¸¢å¼ƒå·²æäº¤çš„journalq
     while (!journalq.empty() && journalq.front().first <= seq) {
         journalq.pop_front();
     }
 
     int64_t old_start = header.start;
-	//# ¸üĞÂ header.start ºÍ header.start_seq
+	//# æ›´æ–° header.start å’Œ header.start_seq
     if (!journalq.empty()) {
         header.start = journalq.front().second;
         header.start_seq = journalq.front().first;
@@ -1751,7 +1751,7 @@ void FileJournal::committed_thru(uint64_t seq)
         header.start_seq = seq + 1;
     }
 
-    if (discard) {//# ¿éÉè±¸²ÅÓĞdiscard,¶ªÆúÊı¾İ
+    if (discard) {//# å—è®¾å¤‡æ‰æœ‰discard,ä¸¢å¼ƒæ•°æ®
         dout(10) << __func__  << " will trim (" << old_start << ", " << header.start << ")" << dendl;
         if (old_start < header.start)
             do_discard(old_start, header.start - 1);
@@ -1760,12 +1760,12 @@ void FileJournal::committed_thru(uint64_t seq)
             do_discard(get_top(), header.start - 1);
         }
     }
-	//# ¸üĞÂÍ·²¿ĞÅÏ¢
+	//# æ›´æ–°å¤´éƒ¨ä¿¡æ¯
     must_write_header = true;
     print_header(header);
 
     // committed but unjournaled items
-    //#¡¡ÒÑ¾­Ìá½»µ«»¹Ã»Ğ´½øÈÕÖ¾µÄ£¬¶ªÆú
+    //#ã€€å·²ç»æäº¤ä½†è¿˜æ²¡å†™è¿›æ—¥å¿—çš„ï¼Œä¸¢å¼ƒ
     while (!writeq_empty() && peek_write().seq <= seq) {
         dout(15) << " dropping committed but unwritten seq " << peek_write().seq
                  << " len " << peek_write().bl.length()
@@ -1798,7 +1798,7 @@ void FileJournal::put_throttle(uint64_t ops, uint64_t bytes)
         logger->set(l_os_jq_max_bytes, throttle_bytes.get_max());
     }
 }
-//# ³õÊ¼»¯²¢Æô¶¯Ğ´½ø³Ì
+//# åˆå§‹åŒ–å¹¶å¯åŠ¨å†™è¿›ç¨‹
 int FileJournal::make_writeable()
 {
     dout(10) << __func__ << dendl;
@@ -1810,13 +1810,13 @@ int FileJournal::make_writeable()
         write_pos = read_pos;
     else
         write_pos = get_top();
-    read_pos = 0; //# °Ñread_posÖÃ0,Ğ´ÈÕÖ¾µÄ¹ı³Ì²»»á¸Äread_pos
+    read_pos = 0; //# æŠŠread_posç½®0,å†™æ—¥å¿—çš„è¿‡ç¨‹ä¸ä¼šæ”¹read_pos
 
     must_write_header = true;
     start_writer();
     return 0;
 }
-//# ÔÚÈÕÖ¾ÖĞ¶ÁÈ¡Ò»¶ÎÊı¾İ
+//# åœ¨æ—¥å¿—ä¸­è¯»å–ä¸€æ®µæ•°æ®
 void FileJournal::wrap_read_bl(
     off64_t pos,
     int64_t olen,
@@ -1854,8 +1854,8 @@ void FileJournal::wrap_read_bl(
         *out_pos = pos;
 }
 
-//# ´Óread_pos¿ªÊ¼¶ÁÈ¡Ò»Ïî,Èç¹û´«½øÀ´µÄnext_seq´óÓÚ¶ÁÈ¡µ½µÄseq,·µ»Øfalse,·ñÔò,¸üĞÂread_posºÍ·µ»ØÕâ¸öseqµÄºÅ,ºÍÕâ¸öseqµÄÊı¾İ
-//# blÊÇÊı¾İ²¿·Ö,²»°üÀ¨Í·²¿ºÍ²¹Æë²¿·Ö
+//# ä»read_poså¼€å§‹è¯»å–ä¸€é¡¹,å¦‚æœä¼ è¿›æ¥çš„next_seqå¤§äºè¯»å–åˆ°çš„seq,è¿”å›false,å¦åˆ™,æ›´æ–°read_poså’Œè¿”å›è¿™ä¸ªseqçš„å·,å’Œè¿™ä¸ªseqçš„æ•°æ®
+//# blæ˜¯æ•°æ®éƒ¨åˆ†,ä¸åŒ…æ‹¬å¤´éƒ¨å’Œè¡¥é½éƒ¨åˆ†
 bool FileJournal::read_entry(
     bufferlist &bl,
     uint64_t &next_seq,
@@ -1873,7 +1873,7 @@ bool FileJournal::read_entry(
     off64_t pos = read_pos;
     off64_t next_pos = pos;
     stringstream ss;
-	//# ¸ù¾İÎ»ÖÃpos,¶ÁÈ¡Ò»Ïî, ·µ»ØÏÂÒ»ÏîµÄnext_pos, ÕâÒ»ÏîµÄÊı¾İ,seq,ĞÅÏ¢,Í·²¿
+	//# æ ¹æ®ä½ç½®pos,è¯»å–ä¸€é¡¹, è¿”å›ä¸‹ä¸€é¡¹çš„next_pos, è¿™ä¸€é¡¹çš„æ•°æ®,seq,ä¿¡æ¯,å¤´éƒ¨
     read_entry_result result = do_read_entry(
                                    pos,
                                    &next_pos,
@@ -1894,7 +1894,7 @@ bool FileJournal::read_entry(
     }
 
     if (seq && seq < header.committed_up_to) {
-		//# ÈÕÖ¾ÒÑ¾­Ìá½»,µ«¶ÁÈ¡Ê§°Ü
+		//# æ—¥å¿—å·²ç»æäº¤,ä½†è¯»å–å¤±è´¥
         derr << "Unable to read past sequence " << seq
              << " but header indicates the journal has committed up through "
              << header.committed_up_to << ", journal is corrupt" << dendl;
@@ -1912,7 +1912,7 @@ bool FileJournal::read_entry(
             << dendl;
     return false;
 }
-//# ¸ù¾İÎ»ÖÃinit_pos,¶ÁÈ¡Ò»Ïî, ·µ»ØÏÂÒ»ÏîµÄpos, ÕâÒ»ÏîµÄÊı¾İ,seq,ĞÅÏ¢,Í·²¿
+//# æ ¹æ®ä½ç½®init_pos,è¯»å–ä¸€é¡¹, è¿”å›ä¸‹ä¸€é¡¹çš„pos, è¿™ä¸€é¡¹çš„æ•°æ®,seq,ä¿¡æ¯,å¤´éƒ¨
 FileJournal::read_entry_result FileJournal::do_read_entry(
     off64_t init_pos,
     off64_t *next_pos,
@@ -1930,7 +1930,7 @@ FileJournal::read_entry_result FileJournal::do_read_entry(
     entry_header_t *h;
     bufferlist hbl;
     off64_t _next_pos;
-	//# ¶ÁÈ¡Í·²¿
+	//# è¯»å–å¤´éƒ¨
     wrap_read_bl(cur_pos, sizeof(*h), &hbl, &_next_pos);
     h = reinterpret_cast<entry_header_t *>(hbl.c_str());
 
@@ -1958,7 +1958,7 @@ FileJournal::read_entry_result FileJournal::do_read_entry(
     // footer
     entry_header_t *f;
     bufferlist fbl;
-	//# Ç°ºó¶¼ÊÇentry_header_t
+	//# å‰åéƒ½æ˜¯entry_header_t
     wrap_read_bl(cur_pos, sizeof(*f), &fbl, &cur_pos);
     f = reinterpret_cast<entry_header_t *>(fbl.c_str());
     if (memcmp(f, h, sizeof(*f))) {
@@ -2009,7 +2009,7 @@ void FileJournal::throttle()
     if (throttle_bytes.wait(g_conf->journal_queue_max_bytes))
         dout(2) << "throttle: waited for bytes" << dendl;
 }
-//# »ñÈ¡Ä³¸öseq entry_header_tĞÅÏ¢
+//# è·å–æŸä¸ªseq entry_header_tä¿¡æ¯
 void FileJournal::get_header(
     uint64_t wanted_seq,
     off64_t *_pos,
@@ -2023,7 +2023,7 @@ void FileJournal::get_header(
     while (1) {
         bl.clear();
         pos = next_pos;
-		//# ¸ù¾İÎ»ÖÃinit_pos,¶ÁÈ¡Ò»Ïî, ·µ»ØÏÂÒ»ÏîµÄpos, ÕâÒ»ÏîµÄÊı¾İ,seq,ĞÅÏ¢,Í·²¿
+		//# æ ¹æ®ä½ç½®init_pos,è¯»å–ä¸€é¡¹, è¿”å›ä¸‹ä¸€é¡¹çš„pos, è¿™ä¸€é¡¹çš„æ•°æ®,seq,ä¿¡æ¯,å¤´éƒ¨
         read_entry_result result = do_read_entry(
                                        pos,
                                        &next_pos,
@@ -2042,7 +2042,7 @@ void FileJournal::get_header(
     assert(0); // not reachable
 }
 
-//#  ´İ»Ù
+//#  æ‘§æ¯
 void FileJournal::corrupt(
     int wfd,
     off64_t corrupt_at)
@@ -2061,12 +2061,12 @@ void FileJournal::corrupt(
     actual = ::lseek64(wfd, corrupt_at, SEEK_SET);
     assert(actual == corrupt_at);
 
-    buf[0]++;//# ĞŞ¸ÄÊı¾İ,ÔÙĞ´Èë , ÎªÊ²Ã´²»ÄÜÖ±½ÓÊ¹ÓÃfd,»¹ÒªÊ¹ÓÃÍâÃæ´«À´µÄwfd,´ò¿ª¶¼ÊÇÍ¬Ò»¸öÎÄ¼ş
+    buf[0]++;//# ä¿®æ”¹æ•°æ®,å†å†™å…¥ , ä¸ºä»€ä¹ˆä¸èƒ½ç›´æ¥ä½¿ç”¨fd,è¿˜è¦ä½¿ç”¨å¤–é¢ä¼ æ¥çš„wfd,æ‰“å¼€éƒ½æ˜¯åŒä¸€ä¸ªæ–‡ä»¶
     r = safe_write(wfd, buf, 1);
     assert(r == 0);
 }
 
-//# ´İ»Ù·ñ¸öseqµÄÊı¾İ
+//# æ‘§æ¯å¦ä¸ªseqçš„æ•°æ®
 void FileJournal::corrupt_payload(
     int wfd,
     uint64_t seq)
@@ -2080,7 +2080,7 @@ void FileJournal::corrupt_payload(
     corrupt(wfd, corrupt_at);
 }
 
-//# ´İ»ÙÎ²²¿µÄentry_header_tµÄmagic2
+//# æ‘§æ¯å°¾éƒ¨çš„entry_header_tçš„magic2
 void FileJournal::corrupt_footer_magic(
     int wfd,
     uint64_t seq)
@@ -2089,7 +2089,7 @@ void FileJournal::corrupt_footer_magic(
     off64_t pos = 0;
     entry_header_t h;
     get_header(seq, &pos, &h);
-	//# magic2µÄµØÖ·
+	//# magic2çš„åœ°å€
     off64_t corrupt_at =
         pos + sizeof(entry_header_t) + h.pre_pad +
         h.len + h.post_pad +
@@ -2097,7 +2097,7 @@ void FileJournal::corrupt_footer_magic(
     corrupt(wfd, corrupt_at);
 }
 
-//# ´İ»ÙÍ·²¿µÄentry_header_tµÄmagic2
+//# æ‘§æ¯å¤´éƒ¨çš„entry_header_tçš„magic2
 void FileJournal::corrupt_header_magic(
     int wfd,
     uint64_t seq)
@@ -2106,7 +2106,7 @@ void FileJournal::corrupt_header_magic(
     off64_t pos = 0;
     entry_header_t h;
     get_header(seq, &pos, &h);
-	//# magic2µÄµØÖ·
+	//# magic2çš„åœ°å€
     off64_t corrupt_at =
         pos +
         (reinterpret_cast<char*>(&h.magic2) - reinterpret_cast<char*>(&h));

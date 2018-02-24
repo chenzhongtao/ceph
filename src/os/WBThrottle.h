@@ -50,7 +50,7 @@ class WBThrottle : Thread, public md_config_obs_t
      * *_limits.second is the hard limit
      */
 
-    //# Èı¸öÅäÖÃÎª pairÀàĞÍ <ÈíÅäÖÃ,Ó²ÅäÖÃ>
+    //# ä¸‰ä¸ªé…ç½®ä¸º pairç±»å‹ <è½¯é…ç½®,ç¡¬é…ç½®>
     /// Limits on unflushed bytes
     pair<uint64_t, uint64_t> size_limits;   //# 41943040, 419430400
 
@@ -93,9 +93,9 @@ class WBThrottle : Thread, public md_config_obs_t
      * Flush objects in lru order
      */
     list<ghobject_t> lru;
-    ceph::unordered_map<ghobject_t, list<ghobject_t>::iterator> rev_lru; //# ¹şÏ£±í¼ÓËÙ²éÕÒ
+    ceph::unordered_map<ghobject_t, list<ghobject_t>::iterator> rev_lru; //# å“ˆå¸Œè¡¨åŠ é€ŸæŸ¥æ‰¾
 
-    //# É¾³ıÄ³¸öobject
+    //# åˆ é™¤æŸä¸ªobject
     void remove_object(const ghobject_t &oid)
     {
         assert(lock.is_locked());
@@ -107,7 +107,7 @@ class WBThrottle : Thread, public md_config_obs_t
         lru.erase(iter->second);
         rev_lru.erase(iter);
     }
-    //#¡¡È¡³öÒ»¸ö×îÇ°Ò»¸öobject
+    //#ã€€å–å‡ºä¸€ä¸ªæœ€å‰ä¸€ä¸ªobject
     ghobject_t pop_object()
     {
         assert(!lru.empty());
@@ -116,7 +116,7 @@ class WBThrottle : Thread, public md_config_obs_t
         rev_lru.erase(oid);
         return oid;
     }
-    //# ²åÈëÒ»¸öobject
+    //# æ’å…¥ä¸€ä¸ªobject
     void insert_object(const ghobject_t &oid)
     {
         assert(rev_lru.find(oid) == rev_lru.end());
@@ -140,7 +140,7 @@ private:
     FS fs;
 
     void set_from_conf();
-    //# ÊÇ·ñÓĞÄÇÒ»Ïî³¬¹ıÈíÏŞÖÆ
+    //# æ˜¯å¦æœ‰é‚£ä¸€é¡¹è¶…è¿‡è½¯é™åˆ¶
     bool beyond_limit() const
     {
         if (cur_ios < io_limits.first &&
@@ -161,8 +161,8 @@ public:
     void set_fs(FS new_fs)
     {
         Mutex::Locker l(lock);
-        fs = new_fs; //# ÉèÖÃÎÄ¼şÏµÍ³
-        set_from_conf(); //# ´ÓÅäÖÃ¶ÁÈ¡Ä¬ÈÏ²ÎÊı
+        fs = new_fs; //# è®¾ç½®æ–‡ä»¶ç³»ç»Ÿ
+        set_from_conf(); //# ä»é…ç½®è¯»å–é»˜è®¤å‚æ•°
     }
 
     /// Queue wb on oid, fd taking throttle (does not block)

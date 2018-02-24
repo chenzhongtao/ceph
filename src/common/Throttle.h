@@ -26,7 +26,7 @@ class Throttle {
   CephContext *cct;
   const std::string name;
   PerfCounters *logger;
-  ceph::atomic_t count, max; //# µ±Ç°ÊıÄ¿, ×î´óÊıÄ¿
+  ceph::atomic_t count, max; //# å½“å‰æ•°ç›®, æœ€å¤§æ•°ç›®
   Mutex lock;
   list<Cond*> cond;
   const bool use_perf;
@@ -37,14 +37,14 @@ public:
 
 private:
   void _reset_max(int64_t m);
-  //# ÊÇ·ñÓ¦¸ÃµÈ´ı,max²»Îª0,...
+  //# æ˜¯å¦åº”è¯¥ç­‰å¾…,maxä¸ä¸º0,...
   bool _should_wait(int64_t c) const {
     int64_t m = max.read();
     int64_t cur = count.read();
     return
       m &&
-      ((c <= m && cur + c > m) || // normally stay under max   Õı³£Çé¿öÏÂÎÒÃÇ±£³ÖÌí¼Óºócount < = max
-       (c >= m && cur > m));     // except for large c         Èç¹ûcºÜ´ó,ÎÒÃÇ±£³ÖÖ®Ç°µÄcount <= max
+      ((c <= m && cur + c > m) || // normally stay under max   æ­£å¸¸æƒ…å†µä¸‹æˆ‘ä»¬ä¿æŒæ·»åŠ åcount < = max
+       (c >= m && cur > m));     // except for large c         å¦‚æœcå¾ˆå¤§,æˆ‘ä»¬ä¿æŒä¹‹å‰çš„count <= max
   }
 
   bool _wait(int64_t c);
@@ -106,7 +106,7 @@ public:
   bool should_wait(int64_t c) const {
     return _should_wait(c);
   }
-  //# ÖØĞÂÉèÖÃ×î´óÖµ
+  //# é‡æ–°è®¾ç½®æœ€å¤§å€¼
   void reset_max(int64_t m) {
     Mutex::Locker l(lock);
     _reset_max(m);

@@ -83,7 +83,7 @@ private:
     };
 
     // track thread pool size changes
-    unsigned _num_threads; //# Ïß³ÌÊı
+    unsigned _num_threads; //# çº¿ç¨‹æ•°
     string _thread_num_option;
     const char **_conf_keys;
 
@@ -155,7 +155,7 @@ public:
         {
             pool->_lock.Lock();
             bool r = _enqueue(item);
-            pool->_cond.SignalOne(); //# »½ĞÑÒ»¸öÏß³Ì
+            pool->_cond.SignalOne(); //# å”¤é†’ä¸€ä¸ªçº¿ç¨‹
             pool->_lock.Unlock();
             return r;
         }
@@ -406,9 +406,9 @@ public:
     };
 
 private:
-    //# ÓÉ¶àÖÖ¹¤×÷¶ÓÁĞ×é³É, ²»Í¬µÄ¹¤×÷¶ÓÁĞ¶¼ÊÇ¼Ì³ĞWorkQueue_
+    //# ç”±å¤šç§å·¥ä½œé˜Ÿåˆ—ç»„æˆ, ä¸åŒçš„å·¥ä½œé˜Ÿåˆ—éƒ½æ˜¯ç»§æ‰¿WorkQueue_
     vector<WorkQueue_*> work_queues;
-    int last_work_queue; //# ¼ÇÂ¼ÉÏÒ»´ÎÊÇÄÄ¸ö¹¤×÷¶ÓÁĞ,¾ÍÊÇÉÏÃævectorµÄindex,¶à¸öÏß³Ì¹²ÓÃ
+    int last_work_queue; //# è®°å½•ä¸Šä¸€æ¬¡æ˜¯å“ªä¸ªå·¥ä½œé˜Ÿåˆ—,å°±æ˜¯ä¸Šé¢vectorçš„index,å¤šä¸ªçº¿ç¨‹å…±ç”¨
 
 
     // threads
@@ -422,9 +422,9 @@ private:
         }
     };
 
-    set<WorkThread*> _threads;  //# ´æ·Å¹¤×÷Ïß³Ì
+    set<WorkThread*> _threads;  //# å­˜æ”¾å·¥ä½œçº¿ç¨‹
     list<WorkThread*> _old_threads;  ///< need to be joined
-    int processing;  //# ÕıÔÚ´¦ÀíµÄÏß³ÌÊı
+    int processing;  //# æ­£åœ¨å¤„ç†çš„çº¿ç¨‹æ•°
 
     void start_threads();
     void join_old_threads();

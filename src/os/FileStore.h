@@ -176,8 +176,8 @@ private:
     Mutex sync_entry_timeo_lock;
     SafeTimer timer;
 
-    list<Context*> sync_waiters; //#  ´æ·ÅÃ¿´ÎsyncÖ®ºóµÄcallback
-    bool stop;  //# SyncThread ÊÇ·ñÍË³ö
+    list<Context*> sync_waiters; //#  å­˜æ”¾æ¯æ¬¡syncä¹‹åçš„callback
+    bool stop;  //# SyncThread æ˜¯å¦é€€å‡º
     void sync_entry();
     struct SyncThread : public Thread {
         FileStore *fs;
@@ -353,8 +353,8 @@ private:
     WBThrottle wbthrottle;  //# wbthrottle(g_ceph_context)
 
     deque<OpSequencer*> op_queue;
-    Throttle throttle_ops, throttle_bytes;//# FileStore²ãµÄ½ÚÁ÷
-    Finisher op_finisher;  //# ³õÊ¼»¯ op_finisher(g_ceph_context)
+    Throttle throttle_ops, throttle_bytes;//# FileStoreå±‚çš„èŠ‚æµ
+    Finisher op_finisher;  //# åˆå§‹åŒ– op_finisher(g_ceph_context)
 
     ThreadPool op_tp;   //# op_tp(g_ceph_context, "FileStore::op_tp", g_conf->filestore_op_threads, "filestore_op_threads")
     struct OpWQ : public ThreadPool::WorkQueue<OpSequencer> {

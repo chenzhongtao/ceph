@@ -51,13 +51,13 @@ ThreadPool::ThreadPool(CephContext *cct_, string nm, int n, const char *option)
         _conf_keys[0] = NULL;
     }
 }
-//# Çå³ı³¬Ê±ÉèÖÃ
+//# æ¸…é™¤è¶…æ—¶è®¾ç½®
 void ThreadPool::TPHandle::suspend_tp_timeout()
 {
     cct->get_heartbeat_map()->clear_timeout(hb);
 }
 
-//# ÖØÖÃ³¬Ê±ÉèÖÃ
+//# é‡ç½®è¶…æ—¶è®¾ç½®
 void ThreadPool::TPHandle::reset_tp_timeout()
 {
     cct->get_heartbeat_map()->reset_timeout(
@@ -69,7 +69,7 @@ ThreadPool::~ThreadPool()
     assert(_threads.empty());
     delete[] _conf_keys;
 }
-//# ´¦ÀíÅäÖÃ¸Ä±ä
+//# å¤„ç†é…ç½®æ”¹å˜
 void ThreadPool::handle_conf_change(const struct md_config_t *conf,
                                     const std::set <std::string> &changed)
 {
@@ -96,21 +96,21 @@ void ThreadPool::worker(WorkThread *wt)
 
     std::stringstream ss;
     ss << name << " thread " << (void*)pthread_self();
-	//# Ìí¼Óheartbeat_map worker Ò»¸öÏß³ÌÒ»¸ö
+	//# æ·»åŠ heartbeat_map worker ä¸€ä¸ªçº¿ç¨‹ä¸€ä¸ª
     heartbeat_handle_d *hb = cct->get_heartbeat_map()->add_worker(ss.str());
 
     while (!_stop) {
 
         // manage dynamic thread pool
         join_old_threads();
-        if (_threads.size() > _num_threads) { //# Ïß³Ì¹ı¶à,ÍË³öÏß³Ì
+        if (_threads.size() > _num_threads) { //# çº¿ç¨‹è¿‡å¤š,é€€å‡ºçº¿ç¨‹
             ldout(cct,1) << " worker shutting down; too many threads (" << _threads.size() << " > " << _num_threads << ")" << dendl;
             _threads.erase(wt);
-            _old_threads.push_back(wt);//# ·Åµ½¾ÉÏß³ÌÖĞ
+            _old_threads.push_back(wt);//# æ”¾åˆ°æ—§çº¿ç¨‹ä¸­
             break;
         }
 
-        if (!_pause && !work_queues.empty()) { //# Ïß³ÌÃ»ÓĞÔİÍ£,²¢ÇÒ¹¤×÷¶ÓÁĞ²»Îª¿Õ
+        if (!_pause && !work_queues.empty()) { //# çº¿ç¨‹æ²¡æœ‰æš‚åœ,å¹¶ä¸”å·¥ä½œé˜Ÿåˆ—ä¸ä¸ºç©º
             WorkQueue_* wq;
             int tries = work_queues.size();
             bool did = false;
@@ -118,25 +118,25 @@ void ThreadPool::worker(WorkThread *wt)
                 last_work_queue++;
                 last_work_queue %= work_queues.size();//# 0~work_queues.size
                 wq = work_queues[last_work_queue];
-				//# Ä³¸ö¶ÓÁĞÖĞÈ¡³öÒ»Ïî
+				//# æŸä¸ªé˜Ÿåˆ—ä¸­å–å‡ºä¸€é¡¹
                 void *item = wq->_void_dequeue();
                 if (item) {
-                    processing++;//# ÕıÔÚ¹¤×÷µÄÏß³ÌÊı¼Ó1
+                    processing++;//# æ­£åœ¨å·¥ä½œçš„çº¿ç¨‹æ•°åŠ 1
                     ldout(cct,12) << "worker wq " << wq->name << " start processing " << item
                                   << " (" << processing << " active)" << dendl;
                     TPHandle tp_handle(cct, hb, wq->timeout_interval, wq->suicide_interval);
                     tp_handle.reset_tp_timeout();
                     _lock.Unlock();
-                    wq->_void_process(item, tp_handle);//# Ïß³Ì´¦Àí
+                    wq->_void_process(item, tp_handle);//# çº¿ç¨‹å¤„ç†
                     _lock.Lock();
-                    wq->_void_process_finish(item); //# ½áÎ²²Ù×÷
-                    processing--; //# ÕıÔÚ¹¤×÷µÄÏß³ÌÊı¼õ1
+                    wq->_void_process_finish(item); //# ç»“å°¾æ“ä½œ
+                    processing--; //# æ­£åœ¨å·¥ä½œçš„çº¿ç¨‹æ•°å‡1
                     ldout(cct,15) << "worker wq " << wq->name << " done processing " << item
                                   << " (" << processing << " active)" << dendl;
                     if (_pause || _draining)
                         _wait_cond.Signal();
                     did = true;
-                    break;//# Ò»¸öÏß³Ì´¦ÀíÒ»¸ö¾ÍÏÈÍË³ö while (tries--)
+                    break;//# ä¸€ä¸ªçº¿ç¨‹å¤„ç†ä¸€ä¸ªå°±å…ˆé€€å‡º while (tries--)
                 }
             }
             if (did)
@@ -144,9 +144,9 @@ void ThreadPool::worker(WorkThread *wt)
         }
 
         ldout(cct,20) << "worker waiting" << dendl;
-        cct->get_heartbeat_map()->reset_timeout( //# ÖØĞÂÉèÖÃ³¬Ê±Ê±¼ä,ÉÏÒ»¸öÏß³Ì´¦Àí¹ı¾ÃÕâÀï»á´òÓ¡
+        cct->get_heartbeat_map()->reset_timeout( //# é‡æ–°è®¾ç½®è¶…æ—¶æ—¶é—´,ä¸Šä¸€ä¸ªçº¿ç¨‹å¤„ç†è¿‡ä¹…è¿™é‡Œä¼šæ‰“å°
             hb,
-            cct->_conf->threadpool_default_timeout,  //# 60Ãë³¬Ê±
+            cct->_conf->threadpool_default_timeout,  //# 60ç§’è¶…æ—¶
             0);
         _cond.WaitInterval(cct, _lock,
                            utime_t(
@@ -154,11 +154,11 @@ void ThreadPool::worker(WorkThread *wt)
     }
     ldout(cct,1) << "worker finish" << dendl;
 
-    cct->get_heartbeat_map()->remove_worker(hb); //# ÒÆ³ıheartbeat_map worker
+    cct->get_heartbeat_map()->remove_worker(hb); //# ç§»é™¤heartbeat_map worker
 
     _lock.Unlock();
 }
-//# Æô¶¯ËùÓĞWorkThread
+//# å¯åŠ¨æ‰€æœ‰WorkThread
 void ThreadPool::start_threads()
 {
     assert(_lock.is_locked());
@@ -174,7 +174,7 @@ void ThreadPool::start_threads()
         wt->create();  //# ThreadPool::worker
     }
 }
-//# µÈ´ıËùÓĞ¾ÉÏß³ÌÍË³ö
+//# ç­‰å¾…æ‰€æœ‰æ—§çº¿ç¨‹é€€å‡º
 void ThreadPool::join_old_threads()
 {
     assert(_lock.is_locked());
@@ -201,7 +201,7 @@ void ThreadPool::start()
     ldout(cct,15) << "started" << dendl;
 }
 
-//# Í£Ö¹ÍË³öËùÓĞÏß³Ì
+//# åœæ­¢é€€å‡ºæ‰€æœ‰çº¿ç¨‹
 void ThreadPool::stop(bool clear_after)
 {
     ldout(cct,10) << "stop" << dendl;
@@ -213,7 +213,7 @@ void ThreadPool::stop(bool clear_after)
 
     _lock.Lock();
     _stop = true;
-    _cond.Signal(); //# »½ĞÑËùÓĞÏß³Ì
+    _cond.Signal(); //# å”¤é†’æ‰€æœ‰çº¿ç¨‹
     join_old_threads();
     _lock.Unlock();
     for (set<WorkThread*>::iterator p = _threads.begin();
@@ -231,14 +231,14 @@ void ThreadPool::stop(bool clear_after)
     ldout(cct,15) << "stopped" << dendl;
 }
 
-//# ÔİÍ£ËùÓĞÏß³Ì
+//# æš‚åœæ‰€æœ‰çº¿ç¨‹
 void ThreadPool::pause()
 {
     ldout(cct,10) << "pause" << dendl;
     _lock.Lock();
     _pause++;
     while (processing)
-        _wait_cond.Wait(_lock); //# µÈ´ıÕıÔÚÔËĞĞµÄÏß³ÌÔËĞĞÍê
+        _wait_cond.Wait(_lock); //# ç­‰å¾…æ­£åœ¨è¿è¡Œçš„çº¿ç¨‹è¿è¡Œå®Œ
     _lock.Unlock();
     ldout(cct,15) << "paused" << dendl;
 }
@@ -251,7 +251,7 @@ void ThreadPool::pause_new()
     _lock.Unlock();
 }
 
-//# È¡ÏûÔİÍ£
+//# å–æ¶ˆæš‚åœ
 void ThreadPool::unpause()
 {
     ldout(cct,10) << "unpause" << dendl;
@@ -261,7 +261,7 @@ void ThreadPool::unpause()
     _cond.Signal();
     _lock.Unlock();
 }
-//# µÈËùÓĞÏß³Ì´¦ÀíÍê
+//# ç­‰æ‰€æœ‰çº¿ç¨‹å¤„ç†å®Œ
 void ThreadPool::drain(WorkQueue_* wq)
 {
     ldout(cct,10) << "drain" << dendl;

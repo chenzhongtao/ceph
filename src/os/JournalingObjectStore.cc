@@ -10,14 +10,14 @@
 #define dout_prefix *_dout << "journal "
 
 
-//# Æô¶¯ÈÕÖ¾µÄ finisher
+//# å¯åŠ¨æ—¥å¿—çš„ finisher
 void JournalingObjectStore::journal_start()
 {
     dout(10) << "journal_start" << dendl;
     finisher.start();
 }
 
-//# ¹Ø±ÕÈÕÖ¾µÄ finisher
+//# å…³é—­æ—¥å¿—çš„ finisher
 void JournalingObjectStore::journal_stop()
 {
     dout(10) << "journal_stop" << dendl;
@@ -25,7 +25,7 @@ void JournalingObjectStore::journal_stop()
 }
 
 // A journal_replay() makes journal writeable, this closes that out.
-//# ¹Ø±ÕÈÕÖ¾
+//# å…³é—­æ—¥å¿—
 void JournalingObjectStore::journal_write_close()
 {
     if (journal) {
@@ -35,7 +35,7 @@ void JournalingObjectStore::journal_write_close()
     }
     apply_manager.reset();
 }
-//# Æô¶¯ÈÕÖ¾
+//# å¯åŠ¨æ—¥å¿—
 int JournalingObjectStore::journal_replay(uint64_t fs_op_seq)
 {
     dout(10) << "journal_replay fs op_seq " << fs_op_seq << dendl;
@@ -67,7 +67,7 @@ int JournalingObjectStore::journal_replay(uint64_t fs_op_seq)
     replaying = true;
 
     int count = 0;
-	//# °ÑÒÑ¾­Ğ´ÈëÈÕÖ¾µ«»¹Ã»Ğ´Èë´ÅÅÌµÄÊÂÎñÌá½»Ò»´Î
+	//# æŠŠå·²ç»å†™å…¥æ—¥å¿—ä½†è¿˜æ²¡å†™å…¥ç£ç›˜çš„äº‹åŠ¡æäº¤ä¸€æ¬¡
     while (1) {
         bufferlist bl;
         uint64_t seq = op_seq + 1;
@@ -118,7 +118,7 @@ int JournalingObjectStore::journal_replay(uint64_t fs_op_seq)
 
 
 // ------------------------------------
-//# ¿ªÊ¼Ìá½»op
+//# å¼€å§‹æäº¤op
 uint64_t JournalingObjectStore::ApplyManager::op_apply_start(uint64_t op)
 {
     Mutex::Locker l(apply_lock);
@@ -130,10 +130,10 @@ uint64_t JournalingObjectStore::ApplyManager::op_apply_start(uint64_t op)
     dout(10) << "op_apply_start " << op << " open_ops " << open_ops << " -> " << (open_ops+1) << dendl;
     assert(!blocked);
     assert(op > committed_seq);
-    open_ops++; //# ÕıÔÚÌá½»µÄopÊı¼Ó1
+    open_ops++; //# æ­£åœ¨æäº¤çš„opæ•°åŠ 1
     return op;
 }
-//# Ìá½»op½áÊø
+//# æäº¤opç»“æŸ
 void JournalingObjectStore::ApplyManager::op_apply_finish(uint64_t op)
 {
     Mutex::Locker l(apply_lock);
@@ -141,7 +141,7 @@ void JournalingObjectStore::ApplyManager::op_apply_finish(uint64_t op)
              << " -> " << (open_ops-1)
              << ", max_applied_seq " << max_applied_seq << " -> " << MAX(op, max_applied_seq)
              << dendl;
-    --open_ops;//# ÕıÔÚÌá½»µÄopÊı¼õ1
+    --open_ops;//# æ­£åœ¨æäº¤çš„opæ•°å‡1
     assert(open_ops >= 0);
 
     // signal a blocked commit_start (only needed during journal replay)
@@ -155,7 +155,7 @@ void JournalingObjectStore::ApplyManager::op_apply_finish(uint64_t op)
     if (op > max_applied_seq)
         max_applied_seq = op;
 }
-//# Ìá½»¿ªÊ¼,»ñÈ¡op±àºÅ
+//# æäº¤å¼€å§‹,è·å–opç¼–å·
 uint64_t JournalingObjectStore::SubmitManager::op_submit_start()
 {
     lock.Lock();
@@ -163,7 +163,7 @@ uint64_t JournalingObjectStore::SubmitManager::op_submit_start()
     dout(10) << "op_submit_start " << op << dendl;
     return op;
 }
-//# opÌá½»½áÊø,¸üĞÂop_submitted 
+//# opæäº¤ç»“æŸ,æ›´æ–°op_submitted 
 void JournalingObjectStore::SubmitManager::op_submit_finish(uint64_t op)
 {
     dout(10) << "op_submit_finish " << op << dendl;
@@ -178,7 +178,7 @@ void JournalingObjectStore::SubmitManager::op_submit_finish(uint64_t op)
 
 
 // ------------------------------------------
-//# ¸øopÌí¼Ó»Øµ÷
+//# ç»™opæ·»åŠ å›è°ƒ
 void JournalingObjectStore::ApplyManager::add_waiter(uint64_t op, Context *c)
 {
     Mutex::Locker l(com_lock);
@@ -197,7 +197,7 @@ bool JournalingObjectStore::ApplyManager::commit_start()
                  << ", open_ops " << open_ops
                  << dendl;
         blocked = true;
-		//# ÉèÖÃ×èÈû,²¢µÈ´ıËùÓĞÒÑÌá½»µÄÍê³É
+		//# è®¾ç½®é˜»å¡,å¹¶ç­‰å¾…æ‰€æœ‰å·²æäº¤çš„å®Œæˆ
         while (open_ops > 0) {
             dout(10) << "commit_start waiting for " << open_ops << " open ops to drain" << dendl;
             blocked_cond.Wait(apply_lock);
@@ -235,7 +235,7 @@ void JournalingObjectStore::ApplyManager::commit_started()
     blocked = false;
     blocked_cond.Signal();
 }
-//# Ìá½»Íê³É,¸úÈÕÖ¾Ëµ¿ÉÒÔ¸²¸ÇÁËjournal->committed_thru(committing_seq)
+//# æäº¤å®Œæˆ,è·Ÿæ—¥å¿—è¯´å¯ä»¥è¦†ç›–äº†journal->committed_thru(committing_seq)
 void JournalingObjectStore::ApplyManager::commit_finish()
 {
     Mutex::Locker l(com_lock);
@@ -253,7 +253,7 @@ void JournalingObjectStore::ApplyManager::commit_finish()
         commit_waiters.erase(p++);
     }
 }
-//# °ÑÊÂÎñÌá½»µ½ÈÕÖ¾
+//# æŠŠäº‹åŠ¡æäº¤åˆ°æ—¥å¿—
 void JournalingObjectStore::_op_journal_transactions(
     bufferlist& tbl, int data_align,  uint64_t op,
     Context *onjournal, TrackedOpRef osd_op)
@@ -270,7 +270,7 @@ void JournalingObjectStore::_op_journal_transactions(
         apply_manager.add_waiter(op, onjournal);
     }
 }
-//# ÈÕÖ¾ÊÂÎñ×¼±¸,ËùÓĞÊÂÎñµÄÊı¾İ¶¼·ÅÔÚtbl,·µ»ØÊı¾İ¶ÔÆë³¤¶È
+//# æ—¥å¿—äº‹åŠ¡å‡†å¤‡,æ‰€æœ‰äº‹åŠ¡çš„æ•°æ®éƒ½æ”¾åœ¨tbl,è¿”å›æ•°æ®å¯¹é½é•¿åº¦
 int JournalingObjectStore::_op_journal_transactions_prepare(
     list<ObjectStore::Transaction*>& tls, bufferlist& tbl)
 {

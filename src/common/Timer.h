@@ -42,8 +42,8 @@ class SafeTimer
   void timer_thread();
   void _shutdown();
 
-  std::multimap<utime_t, Context*> schedule; //# Ê±¼ä±í,ËùÓĞÊÂ¼ş¶¼²åÔÚÕâÀï,  ¸ù¾İÊ±¼äÅÅĞò
-  std::map<Context*, std::multimap<utime_t, Context*>::iterator> events; //# Ä³¸öcallback¶ÔÓ¦µÄÊÂ¼ş, ¸ù¾İcallbackÅÅĞò,È¡ÏûÊÂ¼şÏÈÔÚÕâÀï²éÕÒ
+  std::multimap<utime_t, Context*> schedule; //# æ—¶é—´è¡¨,æ‰€æœ‰äº‹ä»¶éƒ½æ’åœ¨è¿™é‡Œ,  æ ¹æ®æ—¶é—´æ’åº
+  std::map<Context*, std::multimap<utime_t, Context*>::iterator> events; //# æŸä¸ªcallbackå¯¹åº”çš„äº‹ä»¶, æ ¹æ®callbackæ’åº,å–æ¶ˆäº‹ä»¶å…ˆåœ¨è¿™é‡ŒæŸ¥æ‰¾
   bool stopping;
 
   void dump(const char *caller = 0) const;
