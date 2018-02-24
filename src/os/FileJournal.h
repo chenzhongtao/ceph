@@ -45,7 +45,7 @@ public:
         TrackedOpRef tracked_op;
         completion_item(uint64_t o, Context *c, utime_t s,
                         TrackedOpRef opref)
-            : seq(o), finish(c), start(s), tracked_op(opref) {}
+                : seq(o), finish(c), start(s), tracked_op(opref) {}
         completion_item() : seq(0), finish(0), start(0) {}
     };
     struct write_item {
@@ -54,7 +54,7 @@ public:
         int alignment;
         TrackedOpRef tracked_op;
         write_item(uint64_t s, bufferlist& b, int al, TrackedOpRef opref) :
-            seq(s), alignment(al), tracked_op(opref)
+                seq(s), alignment(al), tracked_op(opref)
         {
             bl.claim(b, buffer::list::CLAIM_ALLOW_NONSHAREABLE); // potential zero-copy
         }
@@ -63,12 +63,12 @@ public:
 
     Mutex finisher_lock;
     Cond finisher_cond;
-    uint64_t journaled_seq; //# ÒÑ¾­Ğ´ÈëÈÕÖ¾ÎÄ¼şµÄseq
-    bool plug_journal_completions; //# Èû×¡»Øµ÷
+    uint64_t journaled_seq; //# å·²ç»å†™å…¥æ—¥å¿—æ–‡ä»¶çš„seq
+    bool plug_journal_completions; //# å¡ä½å›è°ƒ
 
     Mutex writeq_lock;
     Cond writeq_cond;
-    deque<write_item> writeq; //# Ğ´¶ÓÁĞ
+    deque<write_item> writeq; //# å†™é˜Ÿåˆ—
     bool writeq_empty();
     write_item &peek_write();
     void pop_write();
@@ -112,8 +112,8 @@ public:
         __u32 block_size;
         __u32 alignment;
         int64_t max_size;   // max size of journal ring buffer
-        int64_t start;      // offset of first entry  //# start Ö®Ç°µÄÈÕÖ¾ÊÇ¿ÉÒÔ¸²¸ÇµÄÈÕÖ¾  FileJournal::committed_thru»á¸üĞÂĞÅÏ¢
-        uint64_t committed_up_to; // committed up to  //# ÈÕÖ¾ÒÔÌá½»µ½ÄÄ¸öseq   FileJournal::prepare_header»á¸üĞÂĞÅÏ¢
+        int64_t start;      // offset of first entry  //# start ä¹‹å‰çš„æ—¥å¿—æ˜¯å¯ä»¥è¦†ç›–çš„æ—¥å¿—  FileJournal::committed_thruä¼šæ›´æ–°ä¿¡æ¯
+        uint64_t committed_up_to; // committed up to  //# æ—¥å¿—ä»¥æäº¤åˆ°å“ªä¸ªseq   FileJournal::prepare_headerä¼šæ›´æ–°ä¿¡æ¯
 
         /**
          * start_seq
@@ -129,11 +129,11 @@ public:
          * if start_seq > committed_up_thru because the entry would have
          * a sequence >= start_seq and therefore > committed_up_thru.
          */
-        uint64_t start_seq; //# ¿ªÊ¼Ğ´µÄseq     FileJournal::committed_thru»á¸üĞÂĞÅÏ¢
+        uint64_t start_seq; //# å¼€å§‹å†™çš„seq     FileJournal::committed_thruä¼šæ›´æ–°ä¿¡æ¯
 
         header_t() :
-            flags(0), block_size(0), alignment(0), max_size(0), start(0),
-            committed_up_to(0), start_seq(0) {}
+                flags(0), block_size(0), alignment(0), max_size(0), start(0),
+                committed_up_to(0), start_seq(0) {}
 
         void clear()
         {
@@ -207,11 +207,11 @@ public:
     struct entry_header_t {
         uint64_t seq;     // fs op seq #
         uint32_t crc32c;  // payload only.  not header, pre_pad, post_pad, or footer.
-        uint32_t len;  //# Êı¾İµÄ³¤¶È
+        uint32_t len;  //# æ•°æ®çš„é•¿åº¦
         uint32_t pre_pad, post_pad;
         uint64_t magic1;
         uint64_t magic2;
-        //#ÈÕÖ¾µÄĞ´ÈëÇé¿ö header_len + pre_pad + data_len + post_pad + header_len
+        //#æ—¥å¿—çš„å†™å…¥æƒ…å†µ header_len + pre_pad + data_len + post_pad + header_len
 
         void make_magic(off64_t pos, uint64_t fsid)
         {
@@ -221,8 +221,8 @@ public:
         bool check_magic(off64_t pos, uint64_t fsid)
         {
             return
-                magic1 == (uint64_t)pos &&
-                magic2 == (fsid ^ seq ^ len);
+                    magic1 == (uint64_t)pos &&
+                    magic2 == (fsid ^ seq ^ len);
         }
     } __attribute__((__packed__, aligned(4)));
 
@@ -237,11 +237,11 @@ private:
     char *zero_buf;
 
     off64_t max_size;
-    ¡¡¡¡//#¡¡104857600
+    ã€€ã€€//#ã€€104857600
     size_t block_size;
-    ¡¡//#¡¡4096
+    ã€€//#ã€€4096
     bool directio, aio, force_aio;
-    bool must_write_header;  //# ±êÖ¾ÈÕÖ¾ºóÃæĞ´Âú,ĞèÒª´ÓÇ°Ãæ¿ªÊ¼¸²¸Ç
+    bool must_write_header;  //# æ ‡å¿—æ—¥å¿—åé¢å†™æ»¡,éœ€è¦ä»å‰é¢å¼€å§‹è¦†ç›–
     off64_t write_pos;      // byte where the next entry to be written will go
     off64_t read_pos;       //
     bool discard;	  //for block journal whether support discard
@@ -258,7 +258,7 @@ private:
         uint64_t seq;         ///< seq number to complete on aio completion, if non-zero
 
         aio_info(bufferlist& b, uint64_t o, uint64_t s)
-            : iov(NULL), done(false), off(o), len(b.length()), seq(s)
+                : iov(NULL), done(false), off(o), len(b.length()), seq(s)
         {
             bl.claim(b);
             memset((void*)&iocb, 0, sizeof(iocb));
@@ -277,7 +277,7 @@ private:
     /// End protected by aio_lock
 #endif
 
-    uint64_t last_committed_seq; //# ÒÑ¾­Ìá½»µ½´ÅÅÌµÄseq,ÈÕÖ¾¿ÉÒÔÇå³ı, header.committed_up_to Ğ´ÈëÈÕÖ¾µÄseq
+    uint64_t last_committed_seq; //# å·²ç»æäº¤åˆ°ç£ç›˜çš„seq,æ—¥å¿—å¯ä»¥æ¸…é™¤, header.committed_up_to å†™å…¥æ—¥å¿—çš„seq
     uint64_t journaled_since_start;
 
     /*
@@ -294,16 +294,16 @@ private:
         FULL_WAIT = 2,
     } full_state;
 
-    int fd; //# ´ò¿ªjournalµÄfd
+    int fd; //# æ‰“å¼€journalçš„fd
 
     // in journal
-    //# ×¼±¸Ğ´µÄÈÕÖ¾¶ÓÁĞ  seq, queue_pos
+    //# å‡†å¤‡å†™çš„æ—¥å¿—é˜Ÿåˆ—  seq, queue_pos
     deque<pair<uint64_t, off64_t> > journalq;  // track seq offsets, so we can trim later.
-    uint64_t writing_seq; //# ÕıÔÚ×¼±¸Ğ´ÈëµÄseq
+    uint64_t writing_seq; //# æ­£åœ¨å‡†å¤‡å†™å…¥çš„seq
 
 
     // throttle
-    Throttle throttle_ops, throttle_bytes; //# opÊı½ÚÁ÷, ×Ö½ÚÊı½ÚÁ÷
+    Throttle throttle_ops, throttle_bytes; //# opæ•°èŠ‚æµ, å­—èŠ‚æ•°èŠ‚æµ
 
     void put_throttle(uint64_t ops, uint64_t bytes);
 
@@ -345,10 +345,10 @@ private:
 
     /// read len from journal starting at in_pos and wrapping up to len
     void wrap_read_bl(
-        off64_t in_pos,   ///< [in] start position
-        int64_t len,      ///< [in] length to read
-        bufferlist* bl,   ///< [out] result
-        off64_t *out_pos  ///< [out] next position to read, will be wrapped
+            off64_t in_pos,   ///< [in] start position
+            int64_t len,      ///< [in] length to read
+            bufferlist* bl,   ///< [out] result
+            off64_t *out_pos  ///< [out] next position to read, will be wrapped
     ) const;
 
     void do_discard(int64_t offset, int64_t end);
@@ -384,37 +384,37 @@ private:
 
 public:
     FileJournal(uuid_d fsid, Finisher *fin, Cond *sync_cond, const char *f, bool dio=false, bool ai=true, bool faio=false) :
-        Journal(fsid, fin, sync_cond),
-        finisher_lock("FileJournal::finisher_lock", false, true, false, g_ceph_context),
-        journaled_seq(0),
-        plug_journal_completions(false),
-        writeq_lock("FileJournal::writeq_lock", false, true, false, g_ceph_context),
-        completions_lock(
-            "FileJournal::completions_lock", false, true, false, g_ceph_context),
-        fn(f),
-        zero_buf(NULL),
-        max_size(0), block_size(0),
-        directio(dio), aio(ai), force_aio(faio),
-        must_write_header(false),
-        write_pos(0), read_pos(0),
-        discard(false),
+            Journal(fsid, fin, sync_cond),
+            finisher_lock("FileJournal::finisher_lock", false, true, false, g_ceph_context),
+            journaled_seq(0),
+            plug_journal_completions(false),
+            writeq_lock("FileJournal::writeq_lock", false, true, false, g_ceph_context),
+            completions_lock(
+                    "FileJournal::completions_lock", false, true, false, g_ceph_context),
+            fn(f),
+            zero_buf(NULL),
+            max_size(0), block_size(0),
+            directio(dio), aio(ai), force_aio(faio),
+            must_write_header(false),
+            write_pos(0), read_pos(0),
+            discard(false),
 #ifdef HAVE_LIBAIO
-        aio_lock("FileJournal::aio_lock"),
-        aio_ctx(0),
-        aio_num(0), aio_bytes(0),
+            aio_lock("FileJournal::aio_lock"),
+            aio_ctx(0),
+            aio_num(0), aio_bytes(0),
 #endif
-        last_committed_seq(0),
-        journaled_since_start(0),
-        full_state(FULL_NOTFULL),
-        fd(-1),
-        writing_seq(0),
-        throttle_ops(g_ceph_context, "journal_ops", g_conf->journal_queue_max_ops), //# 300
-        throttle_bytes(g_ceph_context, "journal_bytes", g_conf->journal_queue_max_bytes), //# 32M
-        write_lock("FileJournal::write_lock", false, true, false, g_ceph_context),
-        write_stop(true),
-        aio_stop(true),
-        write_thread(this),
-        write_finish_thread(this)
+            last_committed_seq(0),
+            journaled_since_start(0),
+            full_state(FULL_NOTFULL),
+            fd(-1),
+            writing_seq(0),
+            throttle_ops(g_ceph_context, "journal_ops", g_conf->journal_queue_max_ops), //# 300
+            throttle_bytes(g_ceph_context, "journal_bytes", g_conf->journal_queue_max_bytes), //# 32M
+            write_lock("FileJournal::write_lock", false, true, false, g_ceph_context),
+            write_stop(true),
+            aio_stop(true),
+            write_thread(this),
+            write_finish_thread(this)
     {
 
         if (aio && !directio) {
@@ -448,7 +448,7 @@ public:
 
     void throttle();
 
-    //# ÅĞ¶ÏÈÕÖ¾ÊÇ·ñ¿ÉĞ´
+    //# åˆ¤æ–­æ—¥å¿—æ˜¯å¦å¯å†™
     bool is_writeable()
     {
         return read_pos == 0;
@@ -494,44 +494,44 @@ public:
      * is most likely corrupt.
      */
     read_entry_result do_read_entry(
-        off64_t pos,          ///< [in] position to read
-        off64_t *next_pos,    ///< [out] next position to read
-        bufferlist* bl,       ///< [out] payload for successful read
-        uint64_t *seq,        ///< [out] seq of successful read
-        ostream *ss,          ///< [out] error output
-        entry_header_t *h = 0 ///< [out] header
+            off64_t pos,          ///< [in] position to read
+            off64_t *next_pos,    ///< [out] next position to read
+            bufferlist* bl,       ///< [out] payload for successful read
+            uint64_t *seq,        ///< [out] seq of successful read
+            ostream *ss,          ///< [out] error output
+            entry_header_t *h = 0 ///< [out] header
     ) const; ///< @return result code
 
     bool read_entry(
-        bufferlist &bl,
-        uint64_t &last_seq,
-        bool *corrupt
+            bufferlist &bl,
+            uint64_t &last_seq,
+            bool *corrupt
     );
-    //# ¶ÁÈ¡Ò»Ïî,²¢·µ»ØÄÚÈİºÍseq
+    //# è¯»å–ä¸€é¡¹,å¹¶è¿”å›å†…å®¹å’Œseq
     bool read_entry(
-        bufferlist &bl,
-        uint64_t &last_seq)
+            bufferlist &bl,
+            uint64_t &last_seq)
     {
         return read_entry(bl, last_seq, 0);
     }
 
     // Debug/Testing
     void get_header(
-        uint64_t wanted_seq,
-        off64_t *_pos,
-        entry_header_t *h);
+            uint64_t wanted_seq,
+            off64_t *_pos,
+            entry_header_t *h);
     void corrupt(
-        int wfd,
-        off64_t corrupt_at);
+            int wfd,
+            off64_t corrupt_at);
     void corrupt_payload(
-        int wfd,
-        uint64_t seq);
+            int wfd,
+            uint64_t seq);
     void corrupt_footer_magic(
-        int wfd,
-        uint64_t seq);
+            int wfd,
+            uint64_t seq);
     void corrupt_header_magic(
-        int wfd,
-        uint64_t seq);
+            int wfd,
+            uint64_t seq);
 };
 
 WRITE_CLASS_ENCODER(FileJournal::header_t)
