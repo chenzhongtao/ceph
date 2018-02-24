@@ -160,7 +160,7 @@ if(${WITH_GPERFTOOLS})
 	endif(${HAVE_GPERFTOOLS})
 endif(${WITH_GPERFTOOLS})
 
-find_package(snappy REQUIRED)
+#find_package(snappy REQUIRED) #add by zhong
 
 option(WITH_TCMALLOC "Use TCMalloc as Allocator" ON)
 if(${WITH_TCMALLOC})
