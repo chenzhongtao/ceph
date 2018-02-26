@@ -237,9 +237,9 @@ private:
     char *zero_buf;
 
     off64_t max_size;
-    　　//#　104857600
+    //#　104857600
     size_t block_size;
-    　//#　4096
+    //#　4096
     bool directio, aio, force_aio;
     bool must_write_header;  //# 标志日志后面写满,需要从前面开始覆盖
     off64_t write_pos;      // byte where the next entry to be written will go
