@@ -4,7 +4,7 @@
 #include <string.h>
 #include <sys/utsname.h>
 
-//# ��ȡlinux�汾
+//# 获取linux版本
 int get_linux_version(void)
 {
 	struct utsname ubuf;

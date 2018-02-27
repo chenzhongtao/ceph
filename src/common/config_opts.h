@@ -89,7 +89,7 @@ OPTION(async_compressor_threads, OPT_INT, 2)
 OPTION(async_compressor_thread_timeout, OPT_INT, 5)
 OPTION(async_compressor_thread_suicide_timeout, OPT_INT, 30)
 
-//# 默认日志级别
+//# 榛樿鏃ュ織绾у埆
 DEFAULT_SUBSYS(0, 5)
 SUBSYS(lockdep, 0, 1)
 SUBSYS(context, 0, 1)

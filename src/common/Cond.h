@@ -56,7 +56,7 @@ class Cond {
     mutex._post_lock();
     return r;
   }
-  //# µÈ´ıÖ±µ½Ä³¸öÊ±¼ä
+  //# ç­‰å¾…ç›´åˆ°æŸä¸ªæ—¶é—´
   int WaitUntil(Mutex &mutex, utime_t when) {
     // make sure this cond is used with one mutex only
     assert(waiter_mutex == NULL || waiter_mutex == &mutex);
@@ -73,7 +73,7 @@ class Cond {
 
     return r;
   }
-  //# µÈ´ıÖ¸¶¨µÄÊ±¼ä
+  //# ç­‰å¾…æŒ‡å®šçš„æ—¶é—´
   int WaitInterval(CephContext *cct, Mutex &mutex, utime_t interval) {
     utime_t when = ceph_clock_now(cct);
     when += interval;

@@ -44,7 +44,7 @@ struct heartbeat_handle_d {
   const std::string name;
   atomic_t timeout, suicide_timeout;
   time_t grace, suicide_grace;
-  std::list<heartbeat_handle_d*>::iterator list_item; //# ±£´æ×Ô¼ºÔÚHeartbeatMap::m_workersÖĞµÄÎ»ÖÃ
+  std::list<heartbeat_handle_d*>::iterator list_item; //# ä¿å­˜è‡ªå·±åœ¨HeartbeatMap::m_workersä¸­çš„ä½ç½®
 
   heartbeat_handle_d(const std::string& n)
     : name(n), grace(0), suicide_grace(0)
@@ -82,8 +82,8 @@ class HeartbeatMap {
   RWLock m_rwlock;
   time_t m_inject_unhealthy_until;
   std::list<heartbeat_handle_d*> m_workers;
-  atomic_t m_unhealthy_workers; //# ²»½¡¿µworkerÊı
-  atomic_t m_total_workers;     //# ×ÜµÄworkerÊı
+  atomic_t m_unhealthy_workers; //# ä¸å¥åº·workeræ•°
+  atomic_t m_total_workers;     //# æ€»çš„workeræ•°
 
   bool _check(const heartbeat_handle_d *h, const char *who, time_t now);
 };
